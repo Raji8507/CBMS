@@ -1,6 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { expenditureAPI } from '../services/api';
+import {
+  LuUsers,
+  LuBuilding2,
+  LuWallet,
+  LuSettings,
+  LuClipboardList,
+  LuCheckSquare,
+  LuLineChart,
+  LuPlusCircle,
+  LuCalculator,
+  LuFileText,
+  LuSearch,
+  LuLayoutDashboard,
+  LuClock,
+  LuTrendingUp,
+  LuXCircle,
+  LuCheckCircle2
+} from 'react-icons/lu';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -24,22 +42,13 @@ const Dashboard = () => {
     try {
       setIsLoading(true);
 
-      // Fetch stats and recent expenditures in parallel
       const [statsRes, expendituresRes] = await Promise.all([
         expenditureAPI.getExpenditureStats({ financialYear: '2024-25' }),
         expenditureAPI.getExpenditures({ limit: 5 })
       ]);
 
       const statsData = statsRes.data.data.summary;
-
-      // Calculate dashboard stats based on real data
-      // Note: In a real scenario, we might need a dedicated dashboard stats endpoint
-      // for things like total budget, remaining, etc. if not available in expenditure stats.
-      // For now, we'll map what we have and assume some budget defaults if API doesn't provide it yet.
-      // Or better, fetch dept/budgetHead stats if available.
-
-      // Assuming a total budget for demo or fetched from another API:
-      const totalBudget = 5000000; // This should ideally come from allocations API
+      const totalBudget = 5000000;
       const spentAmount = statsData.totalAmount || 0;
       const remainingAmount = totalBudget - spentAmount;
       const utilizationPercentage = Math.round((spentAmount / totalBudget) * 100);
@@ -49,7 +58,7 @@ const Dashboard = () => {
         spentAmount,
         remainingAmount,
         utilizationPercentage,
-        pendingApprovals: expendituresRes.data.data.expenditures.filter(e => e.status === 'pending').length, // This might be just visible ones, better to use stats count
+        pendingApprovals: expendituresRes.data.data.expenditures.filter(e => e.status === 'pending').length,
         totalExpenditures: statsData.totalExpenditures || 0,
       });
 
@@ -64,7 +73,6 @@ const Dashboard = () => {
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      // Fallback or error state could be set here
     } finally {
       setIsLoading(false);
     }
@@ -77,10 +85,10 @@ const Dashboard = () => {
           title: 'System Administration Dashboard',
           subtitle: 'Manage users, departments, and system settings',
           quickActions: [
-            { label: 'Manage Users', icon: '👥', path: '/users' },
-            { label: 'Departments', icon: '🏢', path: '/departments' },
-            { label: 'Budget Heads', icon: '💰', path: '/budget-heads' },
-            { label: 'System Settings', icon: '⚙️', path: '/settings' },
+            { label: 'Manage Users', icon: <LuUsers />, path: '/users' },
+            { label: 'Departments', icon: <LuBuilding2 />, path: '/departments' },
+            { label: 'Budget Heads', icon: <LuWallet />, path: '/budget-heads' },
+            { label: 'System Settings', icon: <LuSettings />, path: '/settings' },
           ],
         };
       case 'office':
@@ -88,10 +96,10 @@ const Dashboard = () => {
           title: 'Finance Office Dashboard',
           subtitle: 'Manage budget allocations and approvals',
           quickActions: [
-            { label: 'Budget Allocations', icon: '📋', path: '/allocations' },
-            { label: 'Pending Approvals', icon: '✅', path: '/approvals' },
-            { label: 'Generate Reports', icon: '📈', path: '/reports' },
-            { label: 'Department Overview', icon: '📊', path: '/department-overview' },
+            { label: 'Budget Allocations', icon: <LuClipboardList />, path: '/allocations' },
+            { label: 'Pending Approvals', icon: <LuCheckSquare />, path: '/approvals' },
+            { label: 'Generate Reports', icon: <LuFileText />, path: '/reports' },
+            { label: 'Department Overview', icon: <LuLayoutDashboard />, path: '/department-overview' },
           ],
         };
       case 'department':
@@ -99,10 +107,10 @@ const Dashboard = () => {
           title: 'Department Dashboard',
           subtitle: `Welcome, ${user?.name}. Manage your department expenditures.`,
           quickActions: [
-            { label: 'Submit Expenditure', icon: '➕', path: '/submit-expenditure' },
-            { label: 'My Expenditures', icon: '💸', path: '/expenditures' },
-            { label: 'Budget Status', icon: '📊', path: '/budget-status' },
-            { label: 'View Reports', icon: '📈', path: '/reports' },
+            { label: 'Submit Expenditure', icon: <LuPlusCircle />, path: '/submit-expenditure' },
+            { label: 'My Expenditures', icon: <LuCalculator />, path: '/expenditures' },
+            { label: 'Budget Status', icon: <LuLineChart />, path: '/budget-status' },
+            { label: 'View Reports', icon: <LuFileText />, path: '/reports' },
           ],
         };
       case 'hod':
@@ -110,10 +118,10 @@ const Dashboard = () => {
           title: 'Head of Department Dashboard',
           subtitle: 'Review and verify departmental expenditures',
           quickActions: [
-            { label: 'Department Expenditures', icon: '📝', path: '/department-expenditures' },
-            { label: 'Pending Verifications', icon: '✅', path: '/approvals' },
-            { label: 'Department Reports', icon: '📈', path: '/reports' },
-            { label: 'Budget Overview', icon: '📊', path: '/budget-overview' },
+            { label: 'Department Expenditures', icon: <LuFileText />, path: '/department-expenditures' },
+            { label: 'Pending Verifications', icon: <LuCheckSquare />, path: '/approvals' },
+            { label: 'Department Reports', icon: <LuLineChart />, path: '/reports' },
+            { label: 'Budget Overview', icon: <LuTrendingUp />, path: '/budget-overview' },
           ],
         };
       case 'vice_principal':
@@ -122,10 +130,10 @@ const Dashboard = () => {
           title: 'Management Dashboard',
           subtitle: 'Oversee college budget and expenditures',
           quickActions: [
-            { label: 'High-Value Approvals', icon: '✅', path: '/approvals' },
-            { label: 'Consolidated Reports', icon: '📈', path: '/reports' },
-            { label: 'Budget Overview', icon: '📊', path: '/consolidated-view' },
-            { label: 'Department Analysis', icon: '📋', path: '/department-analysis' },
+            { label: 'High-Value Approvals', icon: <LuCheckSquare />, path: '/approvals' },
+            { label: 'Consolidated Reports', icon: <LuFileText />, path: '/reports' },
+            { label: 'Budget Overview', icon: <LuLineChart />, path: '/consolidated-view' },
+            { label: 'Department Analysis', icon: <LuClipboardList />, path: '/department-analysis' },
           ],
         };
       case 'auditor':
@@ -133,10 +141,10 @@ const Dashboard = () => {
           title: 'Audit Dashboard',
           subtitle: 'Review financial records and audit trails',
           quickActions: [
-            { label: 'Audit Logs', icon: '🔍', path: '/audit-logs' },
-            { label: 'Financial Reports', icon: '📈', path: '/reports' },
-            { label: 'Expenditure Analysis', icon: '📊', path: '/expenditure-analysis' },
-            { label: 'Compliance Check', icon: '✅', path: '/compliance' },
+            { label: 'Audit Logs', icon: <LuSearch />, path: '/audit-logs' },
+            { label: 'Financial Reports', icon: <LuFileText />, path: '/reports' },
+            { label: 'Expenditure Analysis', icon: <LuLineChart />, path: '/expenditure-analysis' },
+            { label: 'Compliance Check', icon: <LuCheckSquare />, path: '/compliance' },
           ],
         };
       default:
@@ -170,12 +178,12 @@ const Dashboard = () => {
 
   const getStatusIcon = (status) => {
     const icons = {
-      pending: '⏳',
-      verified: '✅',
-      approved: '✅',
-      rejected: '❌',
+      pending: <LuClock />,
+      verified: <LuCheckCircle2 />,
+      approved: <LuCheckCircle2 />,
+      rejected: <LuXCircle />,
     };
-    return icons[status] || '❓';
+    return icons[status] || <LuClock />;
   };
 
   if (isLoading) {
@@ -212,7 +220,7 @@ const Dashboard = () => {
       {/* Statistics Cards */}
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-icon">💰</div>
+          <div className="stat-icon"><LuWallet size={32} /></div>
           <div className="stat-content">
             <h3>Total Budget</h3>
             <p className="stat-value">{formatCurrency(stats.totalBudget)}</p>
@@ -220,7 +228,7 @@ const Dashboard = () => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon">💸</div>
+          <div className="stat-icon"><LuCalculator size={32} /></div>
           <div className="stat-content">
             <h3>Amount Spent</h3>
             <p className="stat-value">{formatCurrency(stats.spentAmount)}</p>
@@ -228,7 +236,7 @@ const Dashboard = () => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon">📊</div>
+          <div className="stat-icon"><LuTrendingUp size={32} /></div>
           <div className="stat-content">
             <h3>Remaining Budget</h3>
             <p className="stat-value">{formatCurrency(stats.remainingAmount)}</p>
@@ -236,7 +244,7 @@ const Dashboard = () => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon">📈</div>
+          <div className="stat-icon"><LuLineChart size={32} /></div>
           <div className="stat-content">
             <h3>Utilization</h3>
             <p className="stat-value">{stats.utilizationPercentage}%</p>
@@ -250,7 +258,7 @@ const Dashboard = () => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon">⏳</div>
+          <div className="stat-icon"><LuClock size={32} /></div>
           <div className="stat-content">
             <h3>Pending Approvals</h3>
             <p className="stat-value">{stats.pendingApprovals}</p>
@@ -258,7 +266,7 @@ const Dashboard = () => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon">📋</div>
+          <div className="stat-icon"><LuClipboardList size={32} /></div>
           <div className="stat-content">
             <h3>Total Expenditures</h3>
             <p className="stat-value">{stats.totalExpenditures}</p>

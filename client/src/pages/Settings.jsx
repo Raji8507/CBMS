@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { settingsAPI } from '../services/api';
+import { LuSettings, LuDollarSign, LuBell, LuShield, LuServer, LuRotateCcw, LuSave } from 'react-icons/lu';
 import './Settings.css';
 
 const Settings = () => {
@@ -12,11 +13,11 @@ const Settings = () => {
   const [formData, setFormData] = useState({});
 
   const tabs = [
-    { id: 'general', label: 'General', icon: 'fas fa-cog' },
-    { id: 'budget', label: 'Budget', icon: 'fas fa-money-bill-wave' },
-    { id: 'notifications', label: 'Notifications', icon: 'fas fa-bell' },
-    { id: 'security', label: 'Security', icon: 'fas fa-shield-alt' },
-    { id: 'system', label: 'System', icon: 'fas fa-server' }
+    { id: 'general', label: 'General', icon: <LuSettings /> },
+    { id: 'budget', label: 'Budget', icon: <LuDollarSign /> },
+    { id: 'notifications', label: 'Notifications', icon: <LuBell /> },
+    { id: 'security', label: 'Security', icon: <LuShield /> },
+    { id: 'system', label: 'System', icon: <LuServer /> }
   ];
 
   useEffect(() => {
@@ -66,7 +67,7 @@ const Settings = () => {
         category: activeTab,
         settings: formData[activeTab]
       });
-      
+
       setSuccess(`${tabs.find(tab => tab.id === activeTab).label} settings updated successfully`);
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
@@ -140,7 +141,7 @@ const Settings = () => {
                 className={`tab ${activeTab === tab.id ? 'active' : ''}`}
                 onClick={() => setActiveTab(tab.id)}
               >
-                <i className={tab.icon}></i>
+                <span className="tab-icon">{tab.icon}</span>
                 {tab.label}
               </button>
             ))}
@@ -152,7 +153,7 @@ const Settings = () => {
             <div className="panel-header">
               <h2>{tabs.find(tab => tab.id === activeTab).label} Settings</h2>
               <button className="btn btn-secondary" onClick={handleReset}>
-                <i className="fas fa-undo"></i> Reset to Default
+                <LuRotateCcw size={16} /> Reset to Default
               </button>
             </div>
 
@@ -169,7 +170,7 @@ const Settings = () => {
                       onChange={handleInputChange}
                     />
                   </div>
-                  
+
                   <div className="form-group">
                     <label htmlFor="collegeCode">College Code</label>
                     <input
@@ -180,7 +181,7 @@ const Settings = () => {
                       onChange={handleInputChange}
                     />
                   </div>
-                  
+
                   <div className="form-row">
                     <div className="form-group">
                       <label htmlFor="academicYear">Academic Year</label>
@@ -192,7 +193,7 @@ const Settings = () => {
                         onChange={handleInputChange}
                       />
                     </div>
-                    
+
                     <div className="form-group">
                       <label htmlFor="financialYear">Financial Year</label>
                       <input
@@ -204,7 +205,7 @@ const Settings = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="form-row">
                     <div className="form-group">
                       <label htmlFor="currency">Currency</label>
@@ -220,7 +221,7 @@ const Settings = () => {
                         <option value="GBP">GBP (£)</option>
                       </select>
                     </div>
-                    
+
                     <div className="form-group">
                       <label htmlFor="timezone">Timezone</label>
                       <select
@@ -254,7 +255,7 @@ const Settings = () => {
                       <option value="yearly">Yearly</option>
                     </select>
                   </div>
-                  
+
                   <div className="form-row">
                     <div className="form-group">
                       <label htmlFor="maxAllocationAmount">Max Allocation Amount</label>
@@ -266,7 +267,7 @@ const Settings = () => {
                         onChange={handleInputChange}
                       />
                     </div>
-                    
+
                     <div className="form-group">
                       <label htmlFor="minAllocationAmount">Min Allocation Amount</label>
                       <input
@@ -278,7 +279,7 @@ const Settings = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="form-row">
                     <div className="form-group">
                       <label htmlFor="approvalRequiredAmount">Approval Required Amount</label>
@@ -290,7 +291,7 @@ const Settings = () => {
                         onChange={handleInputChange}
                       />
                     </div>
-                    
+
                     <div className="form-group">
                       <label htmlFor="autoApprovalAmount">Auto Approval Amount</label>
                       <input
@@ -302,7 +303,7 @@ const Settings = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="form-group">
                     <label className="checkbox-label">
                       <input
@@ -314,7 +315,7 @@ const Settings = () => {
                       Allow Budget Carry Forward
                     </label>
                   </div>
-                  
+
                   <div className="form-group">
                     <label htmlFor="budgetCarryForwardPercentage">Carry Forward Percentage</label>
                     <input
@@ -343,7 +344,7 @@ const Settings = () => {
                       Enable Email Notifications
                     </label>
                   </div>
-                  
+
                   <div className="form-group">
                     <label className="checkbox-label">
                       <input
@@ -355,7 +356,7 @@ const Settings = () => {
                       Enable SMS Notifications
                     </label>
                   </div>
-                  
+
                   <div className="form-group">
                     <label className="checkbox-label">
                       <input
@@ -367,7 +368,7 @@ const Settings = () => {
                       Enable Push Notifications
                     </label>
                   </div>
-                  
+
                   <div className="form-group">
                     <label htmlFor="notificationFrequency">Notification Frequency</label>
                     <select
@@ -382,7 +383,7 @@ const Settings = () => {
                       <option value="weekly">Weekly</option>
                     </select>
                   </div>
-                  
+
                   <div className="form-row">
                     <div className="form-group">
                       <label htmlFor="reminderDays">Reminder Days</label>
@@ -396,7 +397,7 @@ const Settings = () => {
                         max="30"
                       />
                     </div>
-                    
+
                     <div className="form-group">
                       <label htmlFor="escalationDays">Escalation Days</label>
                       <input
@@ -427,7 +428,7 @@ const Settings = () => {
                       max="20"
                     />
                   </div>
-                  
+
                   <div className="form-group">
                     <label className="checkbox-label">
                       <input
@@ -439,7 +440,7 @@ const Settings = () => {
                       Require Special Characters
                     </label>
                   </div>
-                  
+
                   <div className="form-group">
                     <label className="checkbox-label">
                       <input
@@ -451,7 +452,7 @@ const Settings = () => {
                       Require Numbers
                     </label>
                   </div>
-                  
+
                   <div className="form-row">
                     <div className="form-group">
                       <label htmlFor="sessionTimeout">Session Timeout (minutes)</label>
@@ -465,7 +466,7 @@ const Settings = () => {
                         max="480"
                       />
                     </div>
-                    
+
                     <div className="form-group">
                       <label htmlFor="maxLoginAttempts">Max Login Attempts</label>
                       <input
@@ -479,7 +480,7 @@ const Settings = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="form-group">
                     <label htmlFor="lockoutDuration">Lockout Duration (minutes)</label>
                     <input
@@ -492,7 +493,7 @@ const Settings = () => {
                       max="60"
                     />
                   </div>
-                  
+
                   <div className="form-group">
                     <label className="checkbox-label">
                       <input
@@ -520,7 +521,7 @@ const Settings = () => {
                       Enable Maintenance Mode
                     </label>
                   </div>
-                  
+
                   <div className="form-group">
                     <label htmlFor="maintenanceMessage">Maintenance Message</label>
                     <textarea
@@ -531,7 +532,7 @@ const Settings = () => {
                       rows="3"
                     />
                   </div>
-                  
+
                   <div className="form-group">
                     <label htmlFor="maxFileUploadSize">Max File Upload Size (bytes)</label>
                     <input
@@ -542,7 +543,7 @@ const Settings = () => {
                       onChange={handleInputChange}
                     />
                   </div>
-                  
+
                   <div className="form-group">
                     <label htmlFor="auditLogRetention">Audit Log Retention (days)</label>
                     <input
@@ -555,7 +556,7 @@ const Settings = () => {
                       max="3650"
                     />
                   </div>
-                  
+
                   <div className="form-group">
                     <label htmlFor="backupFrequency">Backup Frequency</label>
                     <select
@@ -569,7 +570,7 @@ const Settings = () => {
                       <option value="monthly">Monthly</option>
                     </select>
                   </div>
-                  
+
                   <div className="form-group">
                     <label className="checkbox-label">
                       <input
@@ -586,7 +587,7 @@ const Settings = () => {
 
               <div className="form-actions">
                 <button type="submit" className="btn btn-primary">
-                  <i className="fas fa-save"></i> Save Settings
+                  <LuSave size={16} /> Save Settings
                 </button>
               </div>
             </form>

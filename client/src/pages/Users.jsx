@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { usersAPI, departmentsAPI } from '../services/api';
+import { LuUserPlus, LuPencil, LuTrash2, LuX } from 'react-icons/lu';
 import './Users.css';
 
 const Users = () => {
@@ -48,7 +49,7 @@ const Users = () => {
       if (filters.role) params.role = filters.role;
       if (filters.isActive) params.isActive = filters.isActive;
       if (filters.department) params.department = filters.department;
-      
+
       const response = await usersAPI.getUsers(params);
       setUsers(response.data.data.users);
       setError(null);
@@ -98,7 +99,7 @@ const Users = () => {
     e.preventDefault();
     try {
       await usersAPI.updateUser(editingUser._id, formData);
-      
+
       setShowModal(false);
       setEditingUser(null);
       setFormData({ name: '', email: '', role: '', department: '', isActive: true });
@@ -173,7 +174,7 @@ const Users = () => {
         <h1>Users Management</h1>
         <div className="header-actions">
           <button className="btn btn-secondary" onClick={() => window.location.href = '/signup'}>
-            <i className="fas fa-user-plus"></i> Add New User
+            <LuUserPlus size={18} /> Add New User
           </button>
         </div>
       </div>
@@ -280,7 +281,7 @@ const Users = () => {
                 </td>
                 <td>{user.email}</td>
                 <td>
-                  <span 
+                  <span
                     className="role-badge"
                     style={{ backgroundColor: getRoleColor(user.role) }}
                   >
@@ -307,18 +308,18 @@ const Users = () => {
                 </td>
                 <td>
                   <div className="action-buttons">
-                    <button 
+                    <button
                       className="btn btn-sm btn-secondary"
                       onClick={() => handleEdit(user)}
                     >
-                      <i className="fas fa-edit"></i>
+                      <LuPencil size={16} />
                     </button>
                     {user.role !== 'admin' && (
-                      <button 
+                      <button
                         className="btn btn-sm btn-danger"
                         onClick={() => handleDelete(user._id)}
                       >
-                        <i className="fas fa-trash"></i>
+                        <LuTrash2 size={16} />
                       </button>
                     )}
                   </div>
@@ -335,7 +336,7 @@ const Users = () => {
             <div className="modal-header">
               <h2>Edit User</h2>
               <button className="close-btn" onClick={closeModal}>
-                <i className="fas fa-times"></i>
+                <LuX size={20} />
               </button>
             </div>
             <form onSubmit={handleSubmit} className="modal-form">
@@ -350,7 +351,7 @@ const Users = () => {
                   required
                 />
               </div>
-              
+
               <div className="form-group">
                 <label htmlFor="email">Email *</label>
                 <input
@@ -362,7 +363,7 @@ const Users = () => {
                   required
                 />
               </div>
-              
+
               <div className="form-group">
                 <label htmlFor="role">Role *</label>
                 <select
@@ -377,7 +378,7 @@ const Users = () => {
                   ))}
                 </select>
               </div>
-              
+
               <div className="form-group">
                 <label htmlFor="department">Department</label>
                 <select
@@ -392,7 +393,7 @@ const Users = () => {
                   ))}
                 </select>
               </div>
-              
+
               <div className="form-group">
                 <label className="checkbox-label">
                   <input
@@ -404,7 +405,7 @@ const Users = () => {
                   Active User
                 </label>
               </div>
-              
+
               <div className="modal-actions">
                 <button type="button" className="btn btn-secondary" onClick={closeModal}>
                   Cancel

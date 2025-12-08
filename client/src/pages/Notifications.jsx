@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { notificationAPI } from '../services/api';
+import { LuCheckCheck, LuBell, LuBellOff, LuCheckCircle, LuUser, LuCheck, LuTrash2, LuChevronLeft, LuChevronRight } from 'react-icons/lu';
 import './Notifications.css';
 
 const Notifications = () => {
@@ -31,7 +32,7 @@ const Notifications = () => {
         limit: 20,
         ...filters
       };
-      
+
       const response = await notificationAPI.getNotifications(params);
       setNotifications(response.data.data.notifications);
       setPagination(response.data.data.pagination);
@@ -69,8 +70,8 @@ const Notifications = () => {
   const handleMarkAsRead = async (notificationId) => {
     try {
       await notificationAPI.markAsRead(notificationId);
-      setNotifications(prev => 
-        prev.map(notif => 
+      setNotifications(prev =>
+        prev.map(notif =>
           notif._id === notificationId ? { ...notif, read: true } : notif
         )
       );
@@ -89,7 +90,7 @@ const Notifications = () => {
   const handleMarkAllAsRead = async () => {
     try {
       await notificationAPI.markAllAsRead();
-      setNotifications(prev => 
+      setNotifications(prev =>
         prev.map(notif => ({ ...notif, read: true }))
       );
       if (stats) {
@@ -163,12 +164,12 @@ const Notifications = () => {
     const now = new Date();
     const notificationDate = new Date(date);
     const diffInMinutes = Math.floor((now - notificationDate) / (1000 * 60));
-    
+
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
     if (diffInMinutes < 10080) return `${Math.floor(diffInMinutes / 1440)}d ago`;
-    
+
     return notificationDate.toLocaleDateString('en-IN', {
       year: 'numeric',
       month: 'short',
@@ -191,7 +192,7 @@ const Notifications = () => {
         <div className="header-actions">
           {stats && stats.unreadNotifications > 0 && (
             <button className="btn btn-primary" onClick={handleMarkAllAsRead}>
-              <i className="fas fa-check-double"></i>
+              <LuCheckCheck size={16} />
               Mark All Read
             </button>
           )}
@@ -208,7 +209,7 @@ const Notifications = () => {
         <div className="stats-grid">
           <div className="stat-card">
             <div className="stat-icon">
-              <i className="fas fa-bell"></i>
+              <LuBell size={16} />
             </div>
             <div className="stat-info">
               <div className="stat-number">{stats.totalNotifications}</div>
@@ -217,7 +218,7 @@ const Notifications = () => {
           </div>
           <div className="stat-card unread">
             <div className="stat-icon">
-              <i className="fas fa-bell-slash"></i>
+              <LuBellOff size={16} />
             </div>
             <div className="stat-info">
               <div className="stat-number">{stats.unreadNotifications}</div>
@@ -226,7 +227,7 @@ const Notifications = () => {
           </div>
           <div className="stat-card read">
             <div className="stat-icon">
-              <i className="fas fa-check-circle"></i>
+              <LuCheckCircle size={16} />
             </div>
             <div className="stat-info">
               <div className="stat-number">{stats.readNotifications}</div>
@@ -281,22 +282,22 @@ const Notifications = () => {
 
       <div className="notifications-list">
         {notifications.map((notification) => (
-          <div 
-            key={notification._id} 
+          <div
+            key={notification._id}
             className={`notification-item ${notification.read ? 'read' : 'unread'}`}
           >
             <div className="notification-icon">
-              <i 
+              <i
                 className={getNotificationIcon(notification.type)}
                 style={{ color: getTypeColor(notification.type) }}
               ></i>
             </div>
-            
+
             <div className="notification-content">
               <div className="notification-header">
                 <h3 className="notification-title">{notification.title}</h3>
                 <div className="notification-meta">
-                  <span 
+                  <span
                     className="priority-badge"
                     style={{ backgroundColor: getPriorityColor(notification.priority) }}
                   >
@@ -307,16 +308,16 @@ const Notifications = () => {
                   </span>
                 </div>
               </div>
-              
+
               <p className="notification-message">{notification.message}</p>
-              
+
               {notification.senderName && (
                 <div className="notification-sender">
-                  <i className="fas fa-user"></i>
+                  <LuUser size={16} />
                   <span>From: {notification.senderName}</span>
                 </div>
               )}
-              
+
               {notification.metadata && Object.keys(notification.metadata).length > 0 && (
                 <div className="notification-metadata">
                   {Object.entries(notification.metadata).slice(0, 3).map(([key, value]) => (
@@ -328,21 +329,21 @@ const Notifications = () => {
                 </div>
               )}
             </div>
-            
+
             <div className="notification-actions">
               {!notification.read && (
-                <button 
+                <button
                   className="btn btn-sm btn-primary"
                   onClick={() => handleMarkAsRead(notification._id)}
                 >
-                  <i className="fas fa-check"></i>
+                  <LuCheck size={16} />
                 </button>
               )}
-              <button 
+              <button
                 className="btn btn-sm btn-danger"
                 onClick={() => handleDeleteNotification(notification._id)}
               >
-                <i className="fas fa-trash"></i>
+                <LuTrash2 size={16} />
               </button>
             </div>
           </div>
@@ -352,7 +353,7 @@ const Notifications = () => {
       {notifications.length === 0 && (
         <div className="no-notifications">
           <div className="no-notifications-icon">
-            <i className="fas fa-bell-slash"></i>
+            <LuBellOff size={48} />
           </div>
           <h3>No Notifications</h3>
           <p>No notifications found matching the current filters.</p>
@@ -361,26 +362,26 @@ const Notifications = () => {
 
       {pagination.totalPages > 1 && (
         <div className="pagination">
-          <button 
+          <button
             className="btn btn-secondary"
             onClick={() => handlePageChange(pagination.currentPage - 1)}
             disabled={pagination.currentPage === 1}
           >
-            <i className="fas fa-chevron-left"></i>
+            <LuChevronLeft size={18} />
             Previous
           </button>
-          
+
           <span className="page-info">
             Page {pagination.currentPage} of {pagination.totalPages}
           </span>
-          
-          <button 
+
+          <button
             className="btn btn-secondary"
             onClick={() => handlePageChange(pagination.currentPage + 1)}
             disabled={pagination.currentPage === pagination.totalPages}
           >
             Next
-            <i className="fas fa-chevron-right"></i>
+            <LuChevronRight size={18} />
           </button>
         </div>
       )}

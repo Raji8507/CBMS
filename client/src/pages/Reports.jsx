@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { reportAPI, departmentsAPI, budgetHeadsAPI, usersAPI } from '../services/api';
+import { LuReceipt, LuDollarSign, LuPieChart, LuClipboardList, LuDownload } from 'react-icons/lu';
 import './Reports.css';
 
 const Reports = () => {
@@ -32,7 +33,7 @@ const Reports = () => {
         budgetHeadsAPI.getBudgetHeads(),
         usersAPI.getUsers()
       ]);
-      
+
       setDepartments(departmentsRes.data.data.departments);
       setBudgetHeads(budgetHeadsRes.data.data.budgetHeads);
       setUsers(usersRes.data.data.users);
@@ -59,9 +60,9 @@ const Reports = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const params = { ...filters };
-      
+
       let response;
       switch (reportType) {
         case 'expenditures':
@@ -79,7 +80,7 @@ const Reports = () => {
         default:
           throw new Error('Invalid report type');
       }
-      
+
       if (filters.format === 'csv') {
         // Handle CSV download
         const blob = new Blob([response.data], { type: 'text/csv' });
@@ -390,32 +391,32 @@ const Reports = () => {
         <div className="report-type-selector">
           <h3>Report Type</h3>
           <div className="type-buttons">
-            <button 
+            <button
               className={`type-btn ${reportType === 'expenditures' ? 'active' : ''}`}
               onClick={() => handleReportTypeChange('expenditures')}
             >
-              <i className="fas fa-receipt"></i>
+              <LuReceipt size={24} />
               Expenditure Report
             </button>
-            <button 
+            <button
               className={`type-btn ${reportType === 'allocations' ? 'active' : ''}`}
               onClick={() => handleReportTypeChange('allocations')}
             >
-              <i className="fas fa-money-bill-wave"></i>
+              <LuDollarSign size={24} />
               Allocation Report
             </button>
-            <button 
+            <button
               className={`type-btn ${reportType === 'dashboard' ? 'active' : ''}`}
               onClick={() => handleReportTypeChange('dashboard')}
             >
-              <i className="fas fa-chart-pie"></i>
+              <LuPieChart size={24} />
               Dashboard Report
             </button>
-            <button 
+            <button
               className={`type-btn ${reportType === 'audit' ? 'active' : ''}`}
               onClick={() => handleReportTypeChange('audit')}
             >
-              <i className="fas fa-clipboard-list"></i>
+              <LuClipboardList size={24} />
               Audit Report
             </button>
           </div>
@@ -530,7 +531,7 @@ const Reports = () => {
         </div>
 
         <div className="report-actions">
-          <button 
+          <button
             className="btn btn-primary"
             onClick={generateReport}
             disabled={loading}
@@ -542,7 +543,7 @@ const Reports = () => {
               </>
             ) : (
               <>
-                <i className="fas fa-download"></i>
+                <LuDownload size={16} />
                 Generate Report
               </>
             )}

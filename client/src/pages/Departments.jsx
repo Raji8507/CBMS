@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { departmentsAPI } from '../services/api';
+import { LuPlus, LuPencil, LuTrash2, LuX } from 'react-icons/lu';
 import './Departments.css';
 
 const Departments = () => {
@@ -60,7 +61,7 @@ const Departments = () => {
       } else {
         await departmentsAPI.createDepartment(formData);
       }
-      
+
       setShowModal(false);
       setEditingDepartment(null);
       setFormData({ name: '', code: '', description: '', hod: '' });
@@ -121,7 +122,7 @@ const Departments = () => {
       <div className="departments-header">
         <h1>Departments Management</h1>
         <button className="btn btn-primary" onClick={openModal}>
-          <i className="fas fa-plus"></i> Add Department
+          <LuPlus size={18} /> Add Department
         </button>
       </div>
 
@@ -189,17 +190,17 @@ const Departments = () => {
                 </td>
                 <td>
                   <div className="action-buttons">
-                    <button 
+                    <button
                       className="btn btn-sm btn-secondary"
                       onClick={() => handleEdit(dept)}
                     >
-                      <i className="fas fa-edit"></i>
+                      <LuPencil size={16} />
                     </button>
-                    <button 
+                    <button
                       className="btn btn-sm btn-danger"
                       onClick={() => handleDelete(dept._id)}
                     >
-                      <i className="fas fa-trash"></i>
+                      <LuTrash2 size={16} />
                     </button>
                   </div>
                 </td>
@@ -215,7 +216,7 @@ const Departments = () => {
             <div className="modal-header">
               <h2>{editingDepartment ? 'Edit Department' : 'Add New Department'}</h2>
               <button className="close-btn" onClick={closeModal}>
-                <i className="fas fa-times"></i>
+                <LuX size={20} />
               </button>
             </div>
             <form onSubmit={handleSubmit} className="modal-form">
@@ -231,7 +232,7 @@ const Departments = () => {
                   placeholder="e.g., Computer Science"
                 />
               </div>
-              
+
               <div className="form-group">
                 <label htmlFor="code">Department Code *</label>
                 <input
@@ -245,7 +246,7 @@ const Departments = () => {
                   style={{ textTransform: 'uppercase' }}
                 />
               </div>
-              
+
               <div className="form-group">
                 <label htmlFor="description">Description</label>
                 <textarea
@@ -257,7 +258,7 @@ const Departments = () => {
                   rows="3"
                 />
               </div>
-              
+
               <div className="form-group">
                 <label htmlFor="hod">Head of Department (HOD)</label>
                 <select
@@ -271,7 +272,7 @@ const Departments = () => {
                   <option value="2">Test User (user@test.com)</option>
                 </select>
               </div>
-              
+
               <div className="modal-actions">
                 <button type="button" className="btn btn-secondary" onClick={closeModal}>
                   Cancel
