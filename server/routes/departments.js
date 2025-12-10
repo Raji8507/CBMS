@@ -17,11 +17,12 @@ router.use(verifyToken);
 // Department detail route - accessible by department users for their own dept, or elevated roles
 router.get('/:id/detail', getDepartmentDetail);
 
+// Allow authorized roles to view department list
+router.get('/', authorize('admin', 'principal', 'vice_principal', 'office', 'auditor', 'hod'), getDepartments);
+router.get('/stats', authorize('admin', 'principal', 'vice_principal', 'office', 'auditor'), getDepartmentStats);
+
 // All other routes require admin access
 router.use(authorize('admin'));
-
-router.get('/', getDepartments);
-router.get('/stats', getDepartmentStats);
 router.get('/:id', getDepartmentById);
 router.post('/', createDepartment);
 router.put('/:id', updateDepartment);

@@ -16,7 +16,7 @@ const Reports = () => {
     budgetHeadId: '',
     status: '',
     submittedBy: '',
-    financialYear: '2024-25'
+    financialYear: ''
   });
   const [departments, setDepartments] = useState([]);
   const [budgetHeads, setBudgetHeads] = useState([]);

@@ -413,7 +413,7 @@ const ConsolidatedDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {stats?.budgetHeadStats.map((budgetHead) => (
+              {stats?.budgetHeadStats?.map((budgetHead) => (
                 <tr key={budgetHead.budgetHeadCode}>
                   <td data-label="Budget Head">
                     <div className="budget-head-info">

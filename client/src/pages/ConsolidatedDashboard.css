@@ -1,6 +1,6 @@
 /* Consolidated Dashboard - Premium Glass Theme */
 .consolidated-dashboard-container {
-  padding: 0;
+  padding: 10px;
   max-width: 1400px;
   margin: 0 auto;
   animation: slideUpFade 0.5s ease-out;
@@ -15,7 +15,7 @@
 .dashboard-header h1 {
   font-size: 2rem;
   font-weight: 800;
-  color: white;
+  color: black;
   margin: 0;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
