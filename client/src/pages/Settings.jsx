@@ -29,8 +29,8 @@ const Settings = () => {
     try {
       setLoading(true);
       const response = await settingsAPI.getSettings();
-      setSettings(response.data.data.settings);
-      setFormData(response.data.data.settings);
+      setSettings(response.data.data.settings || {});
+      setFormData(response.data.data.settings || {});
       setError(null);
     } catch (err) {
       setError('Failed to fetch settings');
@@ -166,7 +166,7 @@ const Settings = () => {
                       type="text"
                       id="collegeName"
                       name="collegeName"
-                      value={formData.general?.collegeName || ''}
+                      value={formData?.general?.collegeName || ''}
                       onChange={handleInputChange}
                     />
                   </div>
@@ -177,7 +177,7 @@ const Settings = () => {
                       type="text"
                       id="collegeCode"
                       name="collegeCode"
-                      value={formData.general?.collegeCode || ''}
+                      value={formData?.general?.collegeCode || ''}
                       onChange={handleInputChange}
                     />
                   </div>
@@ -189,7 +189,7 @@ const Settings = () => {
                         type="text"
                         id="academicYear"
                         name="academicYear"
-                        value={formData.general?.academicYear || ''}
+                        value={formData?.general?.academicYear || ''}
                         onChange={handleInputChange}
                       />
                     </div>
@@ -200,7 +200,7 @@ const Settings = () => {
                         type="text"
                         id="financialYear"
                         name="financialYear"
-                        value={formData.general?.financialYear || ''}
+                        value={formData?.general?.financialYear || ''}
                         onChange={handleInputChange}
                       />
                     </div>
@@ -212,7 +212,7 @@ const Settings = () => {
                       <select
                         id="currency"
                         name="currency"
-                        value={formData.general?.currency || ''}
+                        value={formData?.general?.currency || ''}
                         onChange={handleInputChange}
                       >
                         <option value="INR">INR (₹)</option>
@@ -227,7 +227,7 @@ const Settings = () => {
                       <select
                         id="timezone"
                         name="timezone"
-                        value={formData.general?.timezone || ''}
+                        value={formData?.general?.timezone || ''}
                         onChange={handleInputChange}
                       >
                         <option value="Asia/Kolkata">Asia/Kolkata</option>

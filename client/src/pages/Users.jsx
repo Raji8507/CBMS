@@ -173,7 +173,7 @@ const Users = () => {
       <div className="users-header">
         <h1>Users Management</h1>
         <div className="header-actions">
-          <button className="btn btn-secondary" onClick={() => window.location.href = '/signup'}>
+          <button className="btn btn-secondary" onClick={() => window.location.href = '/up'}>
             <UserPlus size={18} /> Add New User
           </button>
         </div>
@@ -200,7 +200,7 @@ const Users = () => {
             <div className="stat-label">Inactive Users</div>
           </div>
           <div className="stat-card">
-            <div className="stat-number">{Object.keys(stats.roleStats).length}</div>
+            <div className="stat-number">{Object.keys(stats.roleStats || {}).length}</div>
             <div className="stat-label">Roles</div>
           </div>
         </div>

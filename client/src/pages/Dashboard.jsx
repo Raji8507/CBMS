@@ -1,308 +1,274 @@
 import React, { useState, useEffect } from 'react';
+import ReactECharts from 'echarts-for-react';
 import { useAuth } from '../context/AuthContext';
 import { expenditureAPI, allocationAPI } from '../services/api';
 import {
-  Users,
-  Building2,
   Wallet,
-  Settings,
-  ClipboardList,
-  CheckSquare,
-  LineChart,
-  PlusCircle,
-  Calculator,
+  PieChart,
   FileText,
-  Search,
-  LayoutDashboard,
-  Clock,
-  TrendingUp,
-  XCircle,
-  CheckCircle2
+  CreditCard,
+  ArrowUpRight,
+  ArrowDownRight
 } from 'lucide-react';
 import './Dashboard.css';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const [stats, setStats] = useState({
-    totalBudget: 0,
-    spentAmount: 0,
-    remainingAmount: 0,
-    utilizationPercentage: 0,
-    pendingApprovals: 0,
-    totalExpenditures: 0,
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState({
+    stats: {
+      allocated: { value: 0, trend: 0 },
+      utilized: { value: 0, trend: 0 },
+      requests: { value: 0, trend: 0 },
+      balance: { value: 0, trend: 0 }
+    },
+    activities: []
   });
-  const [recentExpenditures, setRecentExpenditures] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboardData();
+    fetchData();
   }, []);
 
-
-  const fetchDashboardData = async () => {
+  const fetchData = async () => {
     try {
-      setIsLoading(true);
-
-      const [statsRes, expendituresRes, allocationStatsRes] = await Promise.all([
-        expenditureAPI.getExpenditureStats({ financialYear: '2024-25' }),
+      setLoading(true);
+      const [statsRes, expendituresRes, allocationRes] = await Promise.all([
+        expenditureAPI.getExpenditureStats({ financialYear: '2023-2024' }),
         expenditureAPI.getExpenditures({ limit: 5 }),
-        allocationAPI.getAllocationStats({ financialYear: '2024-25' })
+        allocationAPI.getAllocationStats({ financialYear: '2023-2024' })
       ]);
 
-      const statsData = statsRes.data.data.summary;
-      const allocationData = allocationStatsRes.data.data.summary;
+      const allocated = allocationRes.data.data.summary.totalAllocated || 0;
+      const utilized = statsRes.data.data.summary.totalAmount || 0;
+      const requests = expendituresRes.data.data.total || 0;
+      const balance = allocated - utilized;
 
-      // Use real budget data from allocations instead of hardcoded value
-      const totalBudget = allocationData.totalAllocated || 0;
-      const spentAmount = statsData.totalAmount || 0;
-      const remainingAmount = totalBudget - spentAmount;
-      const utilizationPercentage = totalBudget > 0 ? Math.round((spentAmount / totalBudget) * 100) : 0;
+      // Logic check for 0 values
+      const getTrend = (val, mockTrend) => (val === 0 ? 0 : mockTrend);
 
-      setStats({
-        totalBudget,
-        spentAmount,
-        remainingAmount,
-        utilizationPercentage,
-        pendingApprovals: expendituresRes.data.data.expenditures.filter(e => e.status === 'pending').length,
-        totalExpenditures: statsData.totalExpenditures || 0,
+      setDashboardData({
+        stats: {
+          allocated: { value: allocated, trend: getTrend(allocated, 5) }, // Mock +5%
+          utilized: { value: utilized, trend: getTrend(utilized, 12) },   // Mock +12%
+          requests: { value: requests, trend: getTrend(requests, -2) },   // Mock -2%
+          balance: { value: balance, trend: getTrend(balance, 1) }        // Mock +1%
+        },
+        activities: expendituresRes.data.data.expenditures
       });
-
-      setRecentExpenditures(expendituresRes.data.data.expenditures.map(exp => ({
-        id: exp._id,
-        billNumber: exp.billNumber,
-        amount: exp.billAmount,
-        partyName: exp.partyName,
-        status: exp.status,
-        date: new Date(exp.billDate).toLocaleDateString('en-IN')
-      })));
-
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error("Dashboard fetch error", error);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const getRoleSpecificContent = () => {
-    switch (user?.role) {
-      case 'admin':
-        return {
-          title: 'System Administration Dashboard',
-          subtitle: 'Manage users, departments, and system settings',
-          quickActions: [
-            { label: 'Manage Users', icon: <Users />, path: '/users' },
-            { label: 'Departments', icon: <Building2 />, path: '/departments' },
-            { label: 'Budget Heads', icon: <Wallet />, path: '/budget-heads' },
-            { label: 'System Settings', icon: <Settings />, path: '/settings' },
-          ],
-        };
-      case 'office':
-        return {
-          title: 'Finance Office Dashboard',
-          subtitle: 'Manage budget allocations and approvals',
-          quickActions: [
-            { label: 'Budget Allocations', icon: <ClipboardList />, path: '/allocations' },
-            { label: 'Pending Approvals', icon: <CheckSquare />, path: '/approvals' },
-            { label: 'Generate Reports', icon: <FileText />, path: '/reports' },
-            { label: 'Department Overview', icon: <LayoutDashboard />, path: '/department-overview' },
-          ],
-        };
-      case 'department':
-        return {
-          title: 'Department Dashboard',
-          subtitle: `Welcome, ${user?.name}. Manage your department expenditures.`,
-          quickActions: [
-            { label: 'Submit Expenditure', icon: <PlusCircle />, path: '/submit-expenditure' },
-            { label: 'My Expenditures', icon: <Calculator />, path: '/expenditures' },
-            { label: 'Budget Status', icon: <LineChart />, path: '/budget-status' },
-            { label: 'View Reports', icon: <FileText />, path: '/reports' },
-          ],
-        };
-      case 'hod':
-        return {
-          title: 'Head of Department Dashboard',
-          subtitle: 'Review and verify departmental expenditures',
-          quickActions: [
-            { label: 'Department Expenditures', icon: <FileText />, path: '/department-expenditures' },
-            { label: 'Pending Verifications', icon: <CheckSquare />, path: '/approvals' },
-            { label: 'Department Reports', icon: <LineChart />, path: '/reports' },
-            { label: 'Budget Overview', icon: <TrendingUp />, path: '/budget-overview' },
-          ],
-        };
-      case 'vice_principal':
-      case 'principal':
-        return {
-          title: 'Management Dashboard',
-          subtitle: 'Oversee college budget and expenditures',
-          quickActions: [
-            { label: 'High-Value Approvals', icon: <CheckSquare />, path: '/approvals' },
-            { label: 'Consolidated Reports', icon: <FileText />, path: '/reports' },
-            { label: 'Budget Overview', icon: <LineChart />, path: '/consolidated-view' },
-            { label: 'Department Analysis', icon: <ClipboardList />, path: '/department-analysis' },
-          ],
-        };
-      case 'auditor':
-        return {
-          title: 'Audit Dashboard',
-          subtitle: 'Review financial records and audit trails',
-          quickActions: [
-            { label: 'Audit Logs', icon: <Search />, path: '/audit-logs' },
-            { label: 'Financial Reports', icon: <FileText />, path: '/reports' },
-            { label: 'Expenditure Analysis', icon: <LineChart />, path: '/expenditure-analysis' },
-            { label: 'Compliance Check', icon: <CheckSquare />, path: '/compliance' },
-          ],
-        };
-      default:
-        return {
-          title: 'Dashboard',
-          subtitle: 'Welcome to CBMS',
-          quickActions: [],
-        };
-    }
-  };
-
-  const content = getRoleSpecificContent();
-
-  const formatCurrency = (amount) => {
+  const formatCurrency = (val) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(amount);
+      maximumFractionDigits: 0
+    }).format(val);
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: '#ffc107',
-      verified: '#17a2b8',
-      approved: '#28a745',
-      rejected: '#dc3545',
-    };
-    return colors[status] || '#6c757d';
+  // Mock Data for Charts (matching reference image style)
+  const barChartOption = {
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['Budget Year', 'Expenditure'], bottom: 0 },
+    grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'jul', 'Aug', 'Sep', 'Oct', 'Nov'],
+      axisLine: { show: false },
+      axisTick: { show: false }
+    },
+    yAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed' } } },
+    series: [
+      {
+        name: 'Budget Year',
+        type: 'bar',
+        data: [800, 600, 700, 600, 700, 900, 700, 800, 800, 900, 900],
+        itemStyle: { color: '#1a237e', borderRadius: [4, 4, 0, 0] },
+        barWidth: 12
+      },
+      {
+        name: 'Expenditure',
+        type: 'bar',
+        data: [400, 600, 750, 450, 450, 800, 500, 850, 500, 650, 600],
+        itemStyle: { color: '#3b82f6', borderRadius: [4, 4, 0, 0] },
+        barWidth: 12
+      }
+    ]
   };
 
-  const getStatusIcon = (status) => {
-    const icons = {
-      pending: <Clock />,
-      verified: <CheckCircle2 />,
-      approved: <CheckCircle2 />,
-      rejected: <XCircle />,
-    };
-    return icons[status] || <Clock />;
+  const pieChartOption = {
+    tooltip: { trigger: 'item' },
+    legend: { bottom: 0, left: 'center' },
+    series: [
+      {
+        name: 'Distribution',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 10,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        label: { show: false },
+        emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
+        data: [
+          { value: 1048, name: 'Department', itemStyle: { color: '#1a237e' } },
+          { value: 735, name: 'Fleeting', itemStyle: { color: '#3b82f6' } },
+          { value: 580, name: 'Others', itemStyle: { color: '#9ca3af' } }
+        ]
+      }
+    ]
   };
-
-  if (isLoading) {
-    return (
-      <div className="dashboard-container">
-        <p>Loading dashboard...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="dashboard-container">
       <div className="page-header">
-        <h1 className="page-title">{content.title}</h1>
-        <p className="page-subtitle">{content.subtitle}</p>
+        <h1 className="page-title">Dashboard</h1>
       </div>
 
-      {/* Quick Actions */}
-      <div className="quick-actions">
-        <h2>Quick Actions</h2>
-        <div className="actions-grid">
-          {content.quickActions.map((action, index) => (
-            <a key={index} href={action.path} className="action-card">
-              <span className="action-icon">{action.icon}</span>
-              <span className="action-label">{action.label}</span>
-            </a>
-          ))}
-        </div>
-      </div>
-
-      {/* Statistics Cards */}
+      {/* Top Stats Row */}
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-icon"><Wallet size={32} /></div>
-          <div className="stat-content">
-            <h3>Total Budget</h3>
-            <p className="stat-value">{formatCurrency(stats.totalBudget)}</p>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon"><Calculator size={32} /></div>
-          <div className="stat-content">
-            <h3>Amount Spent</h3>
-            <p className="stat-value">{formatCurrency(stats.spentAmount)}</p>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon"><TrendingUp size={32} /></div>
-          <div className="stat-content">
-            <h3>Remaining Budget</h3>
-            <p className="stat-value">{formatCurrency(stats.remainingAmount)}</p>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon"><LineChart size={32} /></div>
-          <div className="stat-content">
-            <h3>Utilization</h3>
-            <p className="stat-value">{stats.utilizationPercentage}%</p>
-            <div className="progress-bar">
-              <div
-                className="progress-fill"
-                style={{ width: `${stats.utilizationPercentage}%` }}
-              ></div>
+          <div className="stat-header">
+            <div className="stat-icon-wrapper blue">
+              <Wallet size={24} />
             </div>
+            {dashboardData.stats.allocated.value > 0 && (
+              <div className="stat-trend positive">
+                <ArrowUpRight size={14} /> +{dashboardData.stats.allocated.trend}%
+              </div>
+            )}
+            {dashboardData.stats.allocated.value === 0 && (
+              <div className="stat-trend neutral" style={{ background: '#f3f4f6', color: '#6b7280' }}>
+                 0%
+              </div>
+            )}
+          </div>
+          <div>
+            <div className="stat-label">Total Budget Allocated</div>
+            <div className="stat-value">{formatCurrency(dashboardData.stats.allocated.value)}</div>
           </div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon"><Clock size={32} /></div>
-          <div className="stat-content">
-            <h3>Pending Approvals</h3>
-            <p className="stat-value">{stats.pendingApprovals}</p>
+          <div className="stat-header">
+            <div className="stat-icon-wrapper green">
+              <PieChart size={24} />
+            </div>
+            {dashboardData.stats.utilized.value > 0 && (
+              <div className="stat-trend positive">
+                <ArrowUpRight size={14} /> +{dashboardData.stats.utilized.trend}%
+              </div>
+            )}
+            {dashboardData.stats.utilized.value === 0 && (
+              <div className="stat-trend neutral" style={{ background: '#f3f4f6', color: '#6b7280' }}>
+                 0%
+              </div>
+            )}
+          </div>
+          <div>
+            <div className="stat-label">Total Utilized</div>
+            <div className="stat-value">{formatCurrency(dashboardData.stats.utilized.value)}</div>
           </div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon"><ClipboardList size={32} /></div>
-          <div className="stat-content">
-            <h3>Total Expenditures</h3>
-            <p className="stat-value">{stats.totalExpenditures}</p>
+          <div className="stat-header">
+            <div className="stat-icon-wrapper orange">
+              <FileText size={24} />
+            </div>
+            {dashboardData.stats.requests.value > 0 && (
+              <div className="stat-trend negative">
+                <ArrowDownRight size={14} /> {dashboardData.stats.requests.trend}%
+              </div>
+            )}
+            {dashboardData.stats.requests.value === 0 && (
+              <div className="stat-trend neutral" style={{ background: '#f3f4f6', color: '#6b7280' }}>
+                 0%
+              </div>
+            )}
+          </div>
+          <div>
+            <div className="stat-label">Pending Approvals</div>
+            <div className="stat-value">{dashboardData.stats.requests.value} Requests</div>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-header">
+            <div className="stat-icon-wrapper purple">
+              <CreditCard size={24} />
+            </div>
+            {dashboardData.stats.balance.value > 0 && (
+              <div className="stat-trend positive">
+                <ArrowUpRight size={14} /> +{dashboardData.stats.balance.trend}%
+              </div>
+            )}
+            {dashboardData.stats.balance.value === 0 && (
+              <div className="stat-trend neutral" style={{ background: '#f3f4f6', color: '#6b7280' }}>
+                 0%
+              </div>
+            )}
+          </div>
+          <div>
+            <div className="stat-label">Remaining Balance</div>
+            <div className="stat-value">{formatCurrency(dashboardData.stats.balance.value)}</div>
           </div>
         </div>
       </div>
 
-      {/* Recent Expenditures */}
-      <div className="recent-expenditures">
-        <h2>Recent Expenditures</h2>
-        <div className="expenditures-table">
-          <div className="table-header">
-            <span>Bill Number</span>
-            <span>Amount</span>
-            <span>Party</span>
-            <span>Status</span>
-            <span>Date</span>
+      {/* Charts Row */}
+      <div className="charts-section">
+        <div className="chart-card">
+          <div className="chart-header">
+            <div className="chart-title">Budget vs. Expenditure (Financial Year)</div>
           </div>
-          {recentExpenditures.map((expenditure) => (
-            <div key={expenditure.id} className="table-row">
-              <span className="bill-number" data-label="Bill Number">{expenditure.billNumber}</span>
-              <span className="amount" data-label="Amount">{formatCurrency(expenditure.amount)}</span>
-              <span className="party" data-label="Party">{expenditure.partyName}</span>
-              <span
-                className="status"
-                data-label="Status"
-                style={{ color: getStatusColor(expenditure.status) }}
-              >
-                {getStatusIcon(expenditure.status)} {expenditure.status}
-              </span>
-              <span className="date" data-label="Date">{expenditure.date}</span>
-            </div>
-          ))}
+          <ReactECharts option={barChartOption} style={{ height: '320px', width: '100%' }} />
         </div>
+        <div className="chart-card">
+          <div className="chart-header">
+            <div className="chart-title">Department-wise Distribution</div>
+          </div>
+          <ReactECharts option={pieChartOption} style={{ height: '320px', width: '100%' }} />
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="recent-activity-section">
+        <div className="section-header">
+          <div className="section-title">Recent Activity</div>
+        </div>
+        <table className="activity-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Requester</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {dashboardData.activities.map((item, idx) => (
+              <tr key={item._id}>
+                <td>1278{idx + 1}</td>
+                <td>{item.partyName || "Finance Officer"}</td>
+                <td className="activity-amount">{formatCurrency(item.billAmount)}</td>
+                <td>
+                  <span className={`status-badge ${item.status}`}>
+                    {item.status}
+                  </span>
+                </td>
+                <td>{new Date(item.submittedAt).toLocaleDateString('en-CA')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

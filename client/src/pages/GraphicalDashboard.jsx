@@ -356,16 +356,18 @@ const GraphicalDashboard = () => {
     const totalRemaining = totalAllocated - totalSpent;
     const utilizationPercentage = totalAllocated > 0 ? (totalSpent / totalAllocated) * 100 : 0;
 
+    const getChange = (val, mockChange) => (val === 0 ? '0%' : mockChange);
+
     return [
-      { title: 'Total Budget', value: formatCurrency(totalAllocated), icon: 'fas fa-wallet', color: '#667eea', change: '+12.5%' },
-      { title: 'Total Spent', value: formatCurrency(totalSpent), icon: 'fas fa-chart-line', color: '#28a745', change: '+8.2%' },
-      { title: 'Remaining Budget', value: formatCurrency(totalRemaining), icon: 'fas fa-piggy-bank', color: '#ffc107', change: '-5.3%' },
+      { title: 'Total Budget', value: formatCurrency(totalAllocated), icon: 'fas fa-wallet', color: '#667eea', change: getChange(totalAllocated, '+12.5%') },
+      { title: 'Total Spent', value: formatCurrency(totalSpent), icon: 'fas fa-chart-line', color: '#28a745', change: getChange(totalSpent, '+8.2%') },
+      { title: 'Remaining Budget', value: formatCurrency(totalRemaining), icon: 'fas fa-piggy-bank', color: '#ffc107', change: getChange(totalRemaining, '-5.3%') },
       {
         title: 'Utilization Rate',
         value: `${utilizationPercentage.toFixed(1)}%`,
         icon: 'fas fa-percentage',
         color: utilizationPercentage > 90 ? '#dc3545' : utilizationPercentage > 75 ? '#ffc107' : '#17a2b8',
-        change: '+2.1%'
+        change: getChange(utilizationPercentage, '+2.1%')
       }
     ];
   };
