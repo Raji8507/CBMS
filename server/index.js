@@ -26,13 +26,23 @@ const app = express();
 // Middleware
 const corsOptions = {
   origin: (origin, callback) => {
+    // If CORS_ORIGIN is '*' or 'true', allow all origins
+    if (process.env.CORS_ORIGIN === '*' || process.env.CORS_ORIGIN === 'true') {
+      return callback(null, true);
+    }
+
     // List of allowed origins
+    let envOrigins = [];
+    if (process.env.CORS_ORIGIN && process.env.CORS_ORIGIN !== 'false') {
+      envOrigins = process.env.CORS_ORIGIN.split(',').map(o => o.trim());
+    }
+
     const allowedOrigins = [
       'http://localhost:3000',
       'https://tempx-workforce.github.io',
       'https://tempx-workforce.github.io/CBMS',
       'https://cbms-mjcv.onrender.com',
-      process.env.CORS_ORIGIN
+      ...envOrigins
     ].filter(Boolean);
 
     // Normalize origin (remove trailing dot if present)
