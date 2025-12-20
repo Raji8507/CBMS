@@ -21,8 +21,19 @@ const pushRoutes = require('./routes/pushRoutes');
 
 // Import services
 const { initReminderService } = require('./services/reminderService');
+const { initSocket } = require('./services/socketService');
 
 const app = express();
+
+// Comprehensive Request Logger for Debugging
+app.use((req, res, next) => {
+  if (req.url.includes('/api/auth/profile/picture')) {
+    console.log(`[HTTP-TRACE] ${req.method} ${req.url}`);
+    console.log(`  Content-Type: ${req.headers['content-type']}`);
+    console.log(`  Content-Length: ${req.headers['content-length']}`);
+  }
+  next();
+});
 
 // Middleware
 app.use(cors({
@@ -32,6 +43,18 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Database connection status middleware
+app.use((req, res, next) => {
+  if (mongoose.connection.readyState !== 1 && req.url !== '/health' && !req.url.startsWith('/api-status')) {
+    return res.status(503).json({
+      success: false,
+      message: 'Database is still connecting, please try again in a moment',
+      status: mongoose.connection.readyState
+    });
+  }
+  next();
+});
 
 // Security Middleware
 const helmet = require('helmet');
@@ -58,7 +81,7 @@ const statusHandler = (req, res) => {
   res.json({
     success: true,
     message: 'CBMS Backend API is running!',
-    version: '1.0.2',
+    version: '1.0.3-DIAGNOSTIC',
     endpoints: {
       auth: '/api/auth',
       users: '/api/users',
@@ -139,20 +162,23 @@ const PORT = process.env.PORT || 5000;
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('✅ Connected to MongoDB');
-
     // Initialize reminder service after DB connection
     initReminderService();
-
-    app.listen(PORT, () => {
-      console.log(`🚀 CBMS Server is running on port ${PORT}`);
-      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
-    });
   })
   .catch((err) => {
     console.error('❌ MongoDB connection error:', err);
-    process.exit(1);
   });
+
+const server = app.listen(PORT, '0.0.0.0', () => {
+  const addr = server.address();
+  console.log(`🚀 CBMS Server is running on http://${addr.address}:${addr.port}`);
+  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 API Base URL: http://localhost:${addr.port}/api`);
+
+  // Initialize Socket.io
+  initSocket(server);
+  console.log('🔌 Socket.io initialized');
+});
 
 // Graceful shutdown
 process.on('SIGINT', async () => {

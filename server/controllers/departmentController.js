@@ -284,7 +284,9 @@ const getDepartmentStats = async (req, res) => {
   try {
     const totalDepartments = await Department.countDocuments();
     const activeDepartments = await Department.countDocuments({ isActive: true });
-    const departmentsWithHOD = await Department.countDocuments({ hod: { $exists: true } });
+    // Count departments that have an HOD assigned (not null)
+    const departmentsWithHOD = await Department.countDocuments({ hod: { $ne: null } });
+    const departmentsWithoutHOD = totalDepartments - departmentsWithHOD;
 
     const userStats = await User.aggregate([
       {
@@ -322,6 +324,7 @@ const getDepartmentStats = async (req, res) => {
         activeDepartments,
         inactiveDepartments: totalDepartments - activeDepartments,
         departmentsWithHOD,
+        departmentsWithoutHOD,
         userDistribution: userStats
       }
     });

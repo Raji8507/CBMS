@@ -11,6 +11,7 @@ import {
   PieChart,
   FileText,
   CreditCard,
+  AlertCircle
 } from 'lucide-react';
 import './Dashboard.css';
 
@@ -28,6 +29,8 @@ const Dashboard = () => {
   });
   const [barChartOption, setBarChartOption] = useState({});
   const [pieChartOption, setPieChartOption] = useState({});
+  const [hasBarData, setHasBarData] = useState(false);
+  const [hasPieData, setHasPieData] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -38,7 +41,7 @@ const Dashboard = () => {
       setLoading(true);
       const currentFY = getCurrentFinancialYear();
       const response = await reportAPI.getDashboardReport({ financialYear: currentFY });
-      
+
       if (response.data.success) {
         const { consolidated } = response.data.data;
         processDashboardData(consolidated);
@@ -56,7 +59,7 @@ const Dashboard = () => {
     const utilized = data.totalSpent || 0;
     const requests = data.statusBreakdown?.pending || 0; // Using count of pending requests
     const balance = allocated - utilized;
-    
+
     // Calculate mock trends or real ones if available
     const getTrend = (val, mock) => val > 0 ? mock : 0;
 
@@ -67,7 +70,7 @@ const Dashboard = () => {
         requests: { value: requests, trend: 0 },
         balance: { value: balance, trend: 0 }
       },
-      activities: [] 
+      activities: []
     });
 
     // 2. Process Bar Chart (Monthly Trend) - SAME LOGIC AS BEFORE
@@ -76,20 +79,22 @@ const Dashboard = () => {
     const trendMap = data.monthlyTrend || {};
     const [startYearStr] = data.financialYear.split('-');
     const startYear = parseInt(startYearStr);
-    
+
     const orderedMonthsISO = [
-      `${startYear}-04`, `${startYear}-05`, `${startYear}-06`, 
-      `${startYear}-07`, `${startYear}-08`, `${startYear}-09`, 
-      `${startYear}-10`, `${startYear}-11`, `${startYear}-12`, 
+      `${startYear}-04`, `${startYear}-05`, `${startYear}-06`,
+      `${startYear}-07`, `${startYear}-08`, `${startYear}-09`,
+      `${startYear}-10`, `${startYear}-11`, `${startYear}-12`,
       `${startYear + 1}-01`, `${startYear + 1}-02`, `${startYear + 1}-03`
     ];
 
     orderedMonthsISO.forEach(key => {
-       expenditureData.push(trendMap[key] || 0);
+      expenditureData.push(trendMap[key] || 0);
     });
 
     const averageBudget = allocated / 12;
     const budgetData = Array(12).fill(Math.round(averageBudget));
+    const hasAnyExpenditure = expenditureData.some(val => val > 0);
+    setHasBarData(hasAnyExpenditure);
 
     setBarChartOption({
       tooltip: { trigger: 'axis' },
@@ -125,13 +130,15 @@ const Dashboard = () => {
     const pieData = Object.keys(deptBreakdown).map((deptName, index) => ({
       value: deptBreakdown[deptName].spent,
       name: deptName,
-      itemStyle: { 
-        color: ['#1a237e', '#3b82f6', '#9ca3af', '#10b981', '#f59e0b'][index % 5] 
+      itemStyle: {
+        color: ['#1a237e', '#3b82f6', '#9ca3af', '#10b981', '#f59e0b'][index % 5]
       }
     })).filter(item => item.value > 0);
 
+    setHasPieData(pieData.length > 0);
+
     setPieChartOption({
-      tooltip: { 
+      tooltip: {
         trigger: 'item',
         formatter: '{b}: {c} ({d}%)'
       },
@@ -165,36 +172,36 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-container">
-      <PageHeader 
-        title="Dashboard" 
+      <PageHeader
+        title="Dashboard"
         subtitle="Financial Overview & Analytics"
       />
 
       {/* Top Stats Row */}
       <div className="stats-grid">
-        <StatCard 
-          title="Total Allocated" 
+        <StatCard
+          title="Total Allocated"
           value={formatCurrency(dashboardData.stats.allocated.value)}
           icon={<Wallet size={24} />}
           trend={dashboardData.stats.allocated.trend}
           color="var(--icon-bg-uniform)"
         />
-        <StatCard 
-          title="Total Utilized" 
+        <StatCard
+          title="Total Utilized"
           value={formatCurrency(dashboardData.stats.utilized.value)}
           icon={<PieChart size={24} />}
           trend={dashboardData.stats.utilized.trend}
           color="var(--icon-bg-uniform)"
         />
-        <StatCard 
-          title="Pending Approvals" 
+        <StatCard
+          title="Pending Approvals"
           value={`${dashboardData.stats.requests.value}`}
           icon={<FileText size={24} />}
           trend={dashboardData.stats.requests.trend}
           color="var(--icon-bg-uniform)"
         />
-        <StatCard 
-          title="Remaining Balance" 
+        <StatCard
+          title="Remaining Balance"
           value={formatCurrency(dashboardData.stats.balance.value)}
           icon={<CreditCard size={24} />}
           trend={dashboardData.stats.balance.trend}
@@ -205,11 +212,25 @@ const Dashboard = () => {
       {/* Charts Row */}
       <div className="charts-section">
         <ContentCard title="Budget vs. Expenditure (Financial Year)">
-          <ReactECharts option={barChartOption} style={{ height: '320px', width: '100%' }} />
+          {hasBarData ? (
+            <ReactECharts option={barChartOption} style={{ height: '320px', width: '100%' }} />
+          ) : (
+            <div className="no-data-display">
+              <AlertCircle size={40} />
+              <p>No expenditure data available for this year</p>
+            </div>
+          )}
         </ContentCard>
-        
+
         <ContentCard title="Department-wise Distribution">
-          <ReactECharts option={pieChartOption} style={{ height: '320px', width: '100%' }} />
+          {hasPieData ? (
+            <ReactECharts option={pieChartOption} style={{ height: '320px', width: '100%' }} />
+          ) : (
+            <div className="no-data-display">
+              <AlertCircle size={40} />
+              <p>No department expenditure data available</p>
+            </div>
+          )}
         </ContentCard>
       </div>
 
