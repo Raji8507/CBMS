@@ -3,6 +3,7 @@ const Notification = require('../models/Notification');
 const User = require('../models/User');
 const PushSubscription = require('../models/PushSubscription');
 const { sendPushNotification } = require('../services/pushService');
+const { emitToUser } = require('../services/socketService');
 
 // Initialize SendGrid
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -192,6 +193,9 @@ const createNotification = async (notificationData) => {
       console.error('Error sending push notification:', pushError);
       // Don't fail the database creation
     }
+
+    // Send Real-time Socket Notification
+    emitToUser(notificationData.recipient, 'notification', notification);
 
     return notification;
   } catch (error) {

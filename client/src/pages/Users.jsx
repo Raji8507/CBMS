@@ -1,29 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { usersAPI, departmentsAPI } from '../services/api';
 import PageHeader from '../components/Common/PageHeader';
 import { Plus, UserPlus, Pencil, Trash2, X, Search, Filter, Shield, Check, RotateCw, MoreHorizontal } from 'lucide-react';
-import './Users.css';
+import './users.css';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    role: '',
-    department: '',
-    isActive: true,
-    permissions: {
-      canApprove: false,
-      exportReports: false,
-      manageBudgets: false,
-      manageUsers: false
-    }
-  });
   const [filters, setFilters] = useState({
     search: '',
     role: '',
@@ -31,13 +17,11 @@ const Users = () => {
     department: ''
   });
 
-  // Removed selectedUserPermissions view state as permissions are now in modal
-
   const roleOptions = [
     { value: 'admin', label: 'Admin' },
     { value: 'office', label: 'Office' },
     { value: 'department', label: 'Department User' },
-    { value: 'hod', label: 'Head of Department' },
+    { value: 'hod', label: 'Hod' },
     { value: 'vice_principal', label: 'Vice Principal' },
     { value: 'principal', label: 'Principal' },
     { value: 'auditor', label: 'Auditor' }
@@ -47,6 +31,20 @@ const Users = () => {
     fetchUsers();
     fetchDepartments();
   }, [filters]);
+
+  const getFullImageUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+
+    // If it's a relative path starting with /uploads, and we're in dev,
+    // we can let the Vite proxy handle it.
+    if (import.meta.env.DEV && path.startsWith('/uploads')) {
+      return path;
+    }
+
+    const apiBase = import.meta.env.REACT_APP_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    return `${apiBase}${path}`;
+  };
 
   const fetchUsers = async () => {
     try {
@@ -77,99 +75,12 @@ const Users = () => {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-
-    if (name.startsWith('permissions.')) {
-      const permKey = name.split('.')[1];
-      setFormData(prev => ({
-        ...prev,
-        permissions: {
-          ...prev.permissions,
-          [permKey]: checked
-        }
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: type === 'checkbox' ? checked : value
-      }));
-    }
-  };
-
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({
       ...prev,
       [name]: value
     }));
-  };
-
-  const handleAddUser = () => {
-    setEditingUser(null);
-    setFormData({
-      name: '',
-      email: '',
-      role: '',
-      department: '',
-      password: '',
-      confirmPassword: '',
-      isActive: true,
-      permissions: {
-        canApprove: false,
-        exportReports: false,
-        manageBudgets: false,
-        manageUsers: false
-      }
-    });
-    setShowModal(true);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
-
-    if (!editingUser) {
-      if (formData.password !== formData.confirmPassword) {
-        setError("Passwords do not match");
-        return;
-      }
-    }
-
-    try {
-      if (editingUser) {
-        await usersAPI.updateUser(editingUser._id, formData);
-      } else {
-        await usersAPI.createUser(formData);
-      }
-
-      setShowModal(false);
-      setEditingUser(null);
-      setFormData({ name: '', email: '', role: '', department: '', password: '', confirmPassword: '', isActive: true });
-      fetchUsers();
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save user');
-    }
-  };
-
-  const handleEdit = (user) => {
-    setEditingUser(user);
-    setFormData({
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      department: user.department || '',
-      password: '',
-      confirmPassword: '',
-      isActive: user.isActive,
-      permissions: user.permissions || {
-        canApprove: false,
-        exportReports: false,
-        manageBudgets: false,
-        manageUsers: false
-      }
-    });
-    setShowModal(true);
   };
 
   const handleDelete = async (id) => {
@@ -181,16 +92,6 @@ const Users = () => {
         setError('Failed to delete user');
       }
     }
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setEditingUser(null);
-    setFormData({
-      name: '', email: '', role: '', department: '', password: '', confirmPassword: '', isActive: true,
-      permissions: { canApprove: false, exportReports: false, manageBudgets: false, manageUsers: false }
-    });
-    setError(null);
   };
 
   const getRoleLabel = (role) => {
@@ -228,27 +129,6 @@ const Users = () => {
     }
   };
 
-  const handleQuickAdd = (user) => {
-    // For now, let's treat "+" as a shortcut to add a similar user (same role/dept)
-    setEditingUser(null);
-    setFormData({
-      name: '',
-      email: '',
-      role: user.role,
-      department: user.department || '',
-      password: '',
-      confirmPassword: '',
-      isActive: true,
-      permissions: {
-        canApprove: false,
-        exportReports: false,
-        manageBudgets: false,
-        manageUsers: false
-      }
-    });
-    setShowModal(true);
-  };
-
   return (
     <>
       <div className="users-content-container">
@@ -258,9 +138,9 @@ const Users = () => {
           title="User Management"
           subtitle="Manage system users and their permissions"
         >
-          <button className="btn btn-primary btn-sm" onClick={handleAddUser}>
+          <Link to="/users/add" className="btn btn-primary btn-sm">
             <Plus size={18} /> Add New User
-          </button>
+          </Link>
         </PageHeader>
 
         {/* Filters Section */}
@@ -313,7 +193,7 @@ const Users = () => {
         {/* Permissions / Main Content Split */}
         <div className="main-content-area">
           <div className="table-section">
-            <h3 className="section-title">Permissions</h3>
+            <h3 className="section-title">Users</h3>
 
             <div className="users-table-wrapper">
               <table className="modern-users-table">
@@ -330,171 +210,86 @@ const Users = () => {
                 <tbody>
                   {loading ? (
                     <tr><td colSpan="6" className="text-center p-4">Loading...</td></tr>
-                  ) : users.map((user) => (
-                    <tr
-                      key={user._id}
-                    >
-                      <td>
-                        <div className="user-profile-cell">
-                          <div className="user-avatar">
-                            {getInitials(user.name)}
+                  ) : (() => {
+                    // Start of IIFE to calculate admin count
+                    const adminCount = users.filter(u => u.role === 'admin').length;
+
+                    return users.map((user) => (
+                      <tr
+                        key={user._id}
+                      >
+                        <td>
+                          <div className="user-profile-cell">
+                            <div className="user-avatar">
+                              {user.profilePicture ? (
+                                <img src={getFullImageUrl(user.profilePicture)} alt={user.name} className="avatar-img" />
+                              ) : (
+                                getInitials(user.name)
+                              )}
+                            </div>
+                            <div className="user-details">
+                              <span className="user-name">{user.name}</span>
+                              <span className="user-email">{user.email}</span>
+                            </div>
                           </div>
-                          <div className="user-details">
-                            <span className="user-name">{user.name}</span>
-                            <span className="user-email">{user.email}</span>
+                        </td>
+                        <td>
+                          <span className={`role-pill ${getRoleColorClass(user.role)}`}>
+                            {getRoleLabel(user.role)}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="dept-text">
+                            {user.department?.name || (user.role === 'admin' ? 'Admin' : 'N/A')}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`status-badge ${user.isActive ? 'status-active' : 'status-inactive'}`}>
+                            {user.isActive ? 'ACTIVE' : 'INACTIVE'}
+                          </span>
+                        </td>
+                        <td>
+                          {/* Toggle Switch Simulation */}
+                          <div
+                            className={`status-toggle ${user.isActive ? 'on' : 'off'}`}
+                            onClick={(e) => { e.stopPropagation(); handleStatusToggle(user); }}
+                            title={user.isActive ? 'Deactivate' : 'Activate'}
+                          >
+                            <div className="toggle-handle"></div>
                           </div>
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`role-pill ${getRoleColorClass(user.role)}`}>
-                          {getRoleLabel(user.role)}
-                        </span>
-                      </td>
-                      <td>
-                        <span className="dept-text">{user.departmentInfo?.name || 'Admin'}</span>
-                      </td>
-                      <td>
-                        <span className="status-text">{user.isActive ? 'Active' : 'Inactive'}</span>
-                      </td>
-                      <td>
-                        {/* Toggle Switch Simulation */}
-                        <div
-                          className={`status-toggle ${user.isActive ? 'on' : 'off'}`}
-                          onClick={(e) => { e.stopPropagation(); handleStatusToggle(user); }}
-                          title={user.isActive ? 'Deactivate' : 'Activate'}
-                        >
-                          <div className="toggle-handle"></div>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="row-actions">
-                          <button className="action-icon edit" onClick={(e) => { e.stopPropagation(); handleEdit(user); }} title="Edit User">
-                            <Pencil size={15} />
-                          </button>
-                          {user.role !== 'admin' && (
-                            <button className="action-icon delete" onClick={(e) => { e.stopPropagation(); handleDelete(user._id); }} title="Delete User">
-                              <Trash2 size={15} />
+                        </td>
+                        <td>
+                          <div className="action-buttons">
+                            <Link to={`/users/edit/${user._id}`} className="btn btn-sm btn-secondary" title="Edit User">
+                              <Pencil size={16} />
+                            </Link>
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (user.role === 'admin' && adminCount <= 1) {
+                                  alert("Cannot delete the last remaining admin.");
+                                  return;
+                                }
+                                handleDelete(user._id);
+                              }}
+                              disabled={user.role === 'admin' && adminCount <= 1}
+                              title={user.role === 'admin' && adminCount <= 1 ? "Cannot delete the last admin" : "Delete User"}
+                            >
+                              <Trash2 size={16} />
                             </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )); // End of map
+                  })() // End of IIFE
+                  }
                 </tbody>
               </table>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Modal - Kept Functional */}
-      {
-        showModal && (
-          <div className="modal-overlay">
-            <div className="modal">
-              <div className="modal-header">
-                <h2>{editingUser ? 'Edit User' : 'Create New User'}</h2>
-                <button className="close-btn" onClick={closeModal}>
-                  <X size={20} />
-                </button>
-              </div>
-              <form onSubmit={handleSubmit} className="modal-form">
-                {/* Reuse existing form fields logic for brevity, structure is same as before but styled by global CSS */}
-                <div className="form-group">
-                  <label>Full Name</label>
-                  <input name="name" value={formData.name} onChange={handleInputChange} required />
-                </div>
-                <div className="form-group">
-                  <label>Email</label>
-                  <input type="email" name="email" value={formData.email} onChange={handleInputChange} required />
-                </div>
-                <div className="form-group">
-                  <label>Role</label>
-                  <select name="role" value={formData.role} onChange={handleInputChange} required>
-                    <option value="">Select Role</option>
-                    {roleOptions.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                  </select>
-                </div>
-                {['department', 'hod'].includes(formData.role) && (
-                  <div className="form-group">
-                    <label>Department</label>
-                    <select name="department" value={formData.department} onChange={handleInputChange} required>
-                      <option value="">Select Department</option>
-                      {departments.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
-                    </select>
-                  </div>
-                )}
-                {!editingUser && (
-                  <>
-                    <div className="form-group">
-                      <label>Password</label>
-                      <input type="password" name="password" value={formData.password} onChange={handleInputChange} required minLength={6} />
-                    </div>
-                    <div className="form-group">
-                      <label>Confirm Password</label>
-                      <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange} required minLength={6} />
-                    </div>
-                  </>
-                )}
-
-                <div className="modal-permissions-section">
-                  <div className="modal-permission-group">
-                    <h4>Permissions</h4>
-                    <div className="modal-checkbox-grid">
-                      <label className="checkbox-item">
-                        <input
-                          type="checkbox"
-                          name="permissions.canApprove"
-                          checked={formData.permissions.canApprove}
-                          onChange={handleInputChange}
-                        />
-                        Can Approve
-                      </label>
-                      <label className="checkbox-item">
-                        <input
-                          type="checkbox"
-                          name="permissions.exportReports"
-                          checked={formData.permissions.exportReports}
-                          onChange={handleInputChange}
-                        />
-                        Can Export Reports
-                      </label>
-                      <label className="checkbox-item">
-                        <input
-                          type="checkbox"
-                          name="permissions.manageBudgets"
-                          checked={formData.permissions.manageBudgets}
-                          onChange={handleInputChange}
-                        />
-                        Manage Budgets
-                      </label>
-                    </div>
-                  </div>
-                  <div className="modal-permission-group">
-                    <h4>Additional Access</h4>
-                    <div className="modal-checkbox-grid">
-                      <label className="checkbox-item">
-                        <input
-                          type="checkbox"
-                          name="permissions.manageUsers"
-                          checked={formData.permissions.manageUsers}
-                          onChange={handleInputChange}
-                        />
-                        Manage Users
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="modal-actions">
-                  <button type="button" className="btn btn-secondary" onClick={closeModal}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">{editingUser ? 'Update' : 'Create'}</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )
-      }
     </>
   );
 };

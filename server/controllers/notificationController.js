@@ -1,5 +1,6 @@
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const { emitToUser } = require('../services/socketService');
 
 // @desc    Get user notifications
 // @route   GET /api/notifications
@@ -7,7 +8,7 @@ const User = require('../models/User');
 const getNotifications = async (req, res) => {
   try {
     const { page = 1, limit = 20, unreadOnly = false } = req.query;
-    
+
     const query = { recipient: req.user._id };
     if (unreadOnly === 'true') {
       query.isRead = false;
@@ -20,9 +21,9 @@ const getNotifications = async (req, res) => {
       .skip((page - 1) * limit);
 
     const total = await Notification.countDocuments(query);
-    const unreadCount = await Notification.countDocuments({ 
-      recipient: req.user._id, 
-      isRead: false 
+    const unreadCount = await Notification.countDocuments({
+      recipient: req.user._id,
+      isRead: false
     });
 
     res.json({
@@ -53,13 +54,13 @@ const getNotifications = async (req, res) => {
 const markAsRead = async (req, res) => {
   try {
     const notification = await Notification.findOneAndUpdate(
-      { 
-        _id: req.params.id, 
-        recipient: req.user._id 
+      {
+        _id: req.params.id,
+        recipient: req.user._id
       },
-      { 
-        isRead: true, 
-        readAt: new Date() 
+      {
+        isRead: true,
+        readAt: new Date()
       },
       { new: true }
     );
@@ -92,13 +93,13 @@ const markAsRead = async (req, res) => {
 const markAllAsRead = async (req, res) => {
   try {
     const result = await Notification.updateMany(
-      { 
-        recipient: req.user._id, 
-        isRead: false 
+      {
+        recipient: req.user._id,
+        isRead: false
       },
-      { 
-        isRead: true, 
-        readAt: new Date() 
+      {
+        isRead: true,
+        readAt: new Date()
       }
     );
 
@@ -166,12 +167,12 @@ const getNotificationStats = async (req, res) => {
       }
     ]);
 
-    const totalNotifications = await Notification.countDocuments({ 
-      recipient: req.user._id 
+    const totalNotifications = await Notification.countDocuments({
+      recipient: req.user._id
     });
-    const unreadNotifications = await Notification.countDocuments({ 
-      recipient: req.user._id, 
-      isRead: false 
+    const unreadNotifications = await Notification.countDocuments({
+      recipient: req.user._id,
+      isRead: false
     });
 
     res.json({
@@ -215,7 +216,7 @@ const createNotification = async (req, res) => {
     }
 
     const notifications = [];
-    
+
     for (const recipientId of recipients) {
       const notification = await Notification.create({
         recipient: recipientId,
@@ -227,6 +228,10 @@ const createNotification = async (req, res) => {
         actionUrl,
         metadata: { createdBy: req.user._id }
       });
+
+      // Send Real-time Socket Notification
+      emitToUser(recipientId, 'notification', notification);
+
       notifications.push(notification);
     }
 
@@ -276,7 +281,7 @@ const sendSystemAnnouncement = async (req, res) => {
     }
 
     const notifications = [];
-    
+
     for (const userId of userIds) {
       const notification = await Notification.create({
         recipient: userId,
@@ -285,18 +290,22 @@ const sendSystemAnnouncement = async (req, res) => {
         type: 'system_announcement',
         priority: 'high',
         actionRequired: false,
-        metadata: { 
+        metadata: {
           createdBy: req.user._id,
           announcementType: 'system'
         }
       });
+
+      // Send Real-time Socket Notification
+      emitToUser(userId, 'notification', notification);
+
       notifications.push(notification);
     }
 
     res.status(201).json({
       success: true,
       message: `Announcement sent to ${notifications.length} users`,
-      data: { 
+      data: {
         notificationsSent: notifications.length,
         targetUsers: userIds.length
       }

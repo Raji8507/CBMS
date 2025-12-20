@@ -20,7 +20,8 @@ import {
   Files,
   GraduationCap,
   Menu,
-  TrendingUp
+  TrendingUp,
+  Layers
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -47,6 +48,7 @@ const Sidebar = ({ isOpen, onClose, isExpanded, onToggleExpand }) => {
           ...baseItems,
           { path: '/users', label: 'Users', icon: <Users size={20} /> },
           { path: '/departments', label: 'Departments', icon: <Building2 size={20} /> },
+          { path: '/categories', label: 'Categories', icon: <Layers size={20} /> },
           { path: '/budget-heads', label: 'Budget Heads', icon: <Wallet size={20} /> },
           { path: '/settings', label: 'Settings', icon: <Settings size={20} /> },
         ];

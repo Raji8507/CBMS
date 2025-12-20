@@ -1,23 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { budgetHeadsAPI } from '../services/api';
+import { budgetHeadsAPI, categoriesAPI } from '../services/api';
+import { Link } from 'react-router-dom';
 import Tooltip from '../components/Tooltip/Tooltip';
 import PageHeader from '../components/Common/PageHeader';
 import StatCard from '../components/Common/StatCard';
-import { Plus, Pencil, Trash2, X, IndianRupee } from 'lucide-react';
+import { Plus, Pencil, Trash2, IndianRupee } from 'lucide-react';
 import './BudgetHeads.css';
 
 const BudgetHeads = () => {
   const [budgetHeads, setBudgetHeads] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [editingBudgetHead, setEditingBudgetHead] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    code: '',
-    description: '',
-    category: 'Other'
-  });
   const [stats, setStats] = useState(null);
   const [filters, setFilters] = useState({
     search: '',
@@ -25,20 +19,22 @@ const BudgetHeads = () => {
     isActive: ''
   });
 
-  const categories = [
-    'academic',
-    'infrastructure',
-    'lab_equipment',
-    'events',
-    'maintenance',
-    'operations',
-    'other'
-  ];
-
   useEffect(() => {
+    fetchCategories();
     fetchBudgetHeads();
     fetchStats();
   }, [filters]);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await categoriesAPI.getCategories();
+      if (response.data.success) {
+        setCategories(response.data.data.categories);
+      }
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+    }
+  };
 
   const fetchBudgetHeads = async () => {
     try {
@@ -68,51 +64,12 @@ const BudgetHeads = () => {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({
       ...prev,
       [name]: value
     }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editingBudgetHead) {
-        await budgetHeadsAPI.updateBudgetHead(editingBudgetHead._id, formData);
-      } else {
-        await budgetHeadsAPI.createBudgetHead(formData);
-      }
-
-      setShowModal(false);
-      setEditingBudgetHead(null);
-      setFormData({ name: '', code: '', description: '', category: 'Other' });
-      fetchBudgetHeads();
-      fetchStats();
-    } catch (err) {
-      setError('Failed to save budget head');
-      console.error('Error saving budget head:', err);
-    }
-  };
-
-  const handleEdit = (budgetHead) => {
-    setEditingBudgetHead(budgetHead);
-    setFormData({
-      name: budgetHead.name,
-      code: budgetHead.code,
-      description: budgetHead.description || '',
-      category: budgetHead.category
-    });
-    setShowModal(true);
   };
 
   const handleDelete = async (id) => {
@@ -128,32 +85,9 @@ const BudgetHeads = () => {
     }
   };
 
-  const openModal = () => {
-    setEditingBudgetHead(null);
-    setFormData({ name: '', code: '', description: '', category: 'Other' });
-    setShowModal(true);
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setEditingBudgetHead(null);
-    setFormData({ name: '', code: '', description: '', category: 'Other' });
-  };
-
-  const getCategoryColor = (category) => {
-    const colors = {
-      'Academic': '#28a745',
-      'Infrastructure': '#007bff',
-      'Personnel': '#ffc107',
-      'Equipment': '#17a2b8',
-      'Operations': '#6f42c1',
-      'Research': '#fd7e14',
-      'Administrative': '#6c757d',
-      'Student Services': '#20c997',
-      'Marketing': '#e83e8c',
-      'Other': '#6c757d'
-    };
-    return colors[category] || '#6c757d';
+  const getCategoryColor = (categoryId) => {
+    const category = categories.find(c => c.id === categoryId);
+    return category?.color || '#6c757d';
   };
 
   if (loading) {
@@ -170,16 +104,12 @@ const BudgetHeads = () => {
         title="Budget Heads Management"
         subtitle="Manage and allocate budget categories"
       >
-        <button className="btn btn-primary" onClick={openModal}>
+        <Link to="/budget-heads/add" className="btn btn-primary">
           <Plus size={18} /> Add Budget Head
-        </button>
+        </Link>
       </PageHeader>
 
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
+      {error && <div className="error-message">{error}</div>}
 
       {stats && (
         <div className="stats-grid">
@@ -199,7 +129,7 @@ const BudgetHeads = () => {
             title="Inactive Budget Heads"
             value={stats.inactiveBudgetHeads}
             icon={<IndianRupee size={24} />}
-            color="var(--warning)" // or error/gray
+            color="var(--warning)"
           />
           <StatCard
             title="Categories"
@@ -230,7 +160,9 @@ const BudgetHeads = () => {
           >
             <option value="">All Categories</option>
             {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
             ))}
           </select>
         </div>
@@ -258,7 +190,7 @@ const BudgetHeads = () => {
               </div>
               <div className="head-status">
                 <span className={`status ${head.isActive ? 'active' : 'inactive'}`}>
-                  {head.isActive ? 'Active' : 'Inactive'}
+                  {head.isActive ? 'ACTIVE' : 'INACTIVE'}
                 </span>
               </div>
             </div>
@@ -269,7 +201,7 @@ const BudgetHeads = () => {
                   className="category-badge"
                   style={{ backgroundColor: getCategoryColor(head.category) }}
                 >
-                  {head.category}
+                  {head.category.toUpperCase()}
                 </span>
               </div>
 
@@ -287,12 +219,12 @@ const BudgetHeads = () => {
 
             <div className="card-actions">
               <Tooltip text="Edit Budget Head" position="top">
-                <button
+                <Link
+                  to={`/budget-heads/edit/${head._id}`}
                   className="btn btn-sm btn-secondary"
-                  onClick={() => handleEdit(head)}
                 >
                   <Pencil size={16} /> Edit
-                </button>
+                </Link>
               </Tooltip>
               <Tooltip text="Delete Budget Head" position="top">
                 <button
@@ -314,83 +246,6 @@ const BudgetHeads = () => {
           </div>
           <h3>No Budget Heads Found</h3>
           <p>No budget heads found matching the current filters.</p>
-        </div>
-      )}
-
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h2>{editingBudgetHead ? 'Edit Budget Head' : 'Add New Budget Head'}</h2>
-              <button className="close-btn" onClick={closeModal}>
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="modal-form">
-              <div className="form-group">
-                <label htmlFor="name">Budget Head Name *</label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="e.g., Academic Expenses"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="code">Budget Head Code *</label>
-                <input
-                  type="text"
-                  id="code"
-                  name="code"
-                  value={formData.code}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="e.g., ACAD"
-                  style={{ textTransform: 'uppercase' }}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="category">Category *</label>
-                <select
-                  id="category"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  required
-                >
-                  {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="description">Description</label>
-                <textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="Budget head description..."
-                  rows="3"
-                />
-              </div>
-
-              <div className="modal-actions">
-                <button type="button" className="btn btn-secondary" onClick={closeModal}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  {editingBudgetHead ? 'Update Budget Head' : 'Create Budget Head'}
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
     </div>

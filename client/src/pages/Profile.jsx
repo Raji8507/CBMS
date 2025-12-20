@@ -86,11 +86,15 @@ const Profile = () => {
         const formData = new FormData();
         formData.append('profilePicture', file);
 
+        console.log('[Profile] Uploading image:', file.name, 'size:', file.size);
+
         setImageLoading(true);
         setError(null);
 
         try {
+            console.log('[Profile] Calling uploadProfilePicture...');
             const result = await uploadProfilePicture(formData);
+            console.log('[Profile] Upload result:', result);
             if (result.success) {
                 setSuccess('Profile picture updated!');
                 setTimeout(() => setSuccess(null), 3000);
@@ -195,7 +199,14 @@ const Profile = () => {
     const getFullImageUrl = (path) => {
         if (!path) return null;
         if (path.startsWith('http')) return path;
-        const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+
+        // If it's a relative path starting with /uploads, and we're in dev,
+        // we can let the Vite proxy handle it.
+        if (import.meta.env.DEV && path.startsWith('/uploads')) {
+            return path;
+        }
+
+        const apiBase = import.meta.env.REACT_APP_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
         return `${apiBase}${path}`;
     };
 

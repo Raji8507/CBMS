@@ -209,6 +209,7 @@ export const AuthProvider = ({ children }) => {
   // Upload profile picture
   const uploadProfilePicture = async (formData) => {
     try {
+      console.log('[AuthContext] Uploading picture for user:', state.user?._id, 'Dept:', state.user?.department);
       const response = await authAPI.uploadProfilePicture(formData);
       const updatedUser = { ...state.user, profilePicture: response.data.data.profilePicture };
 
