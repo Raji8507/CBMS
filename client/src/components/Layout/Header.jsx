@@ -24,6 +24,20 @@ const Header = ({ onMenuClick }) => {
     navigate('/login');
   };
 
+  const getFullImageUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+
+    // If it's a relative path starting with /uploads, and we're in dev,
+    // we can let the Vite proxy handle it.
+    if (import.meta.env.DEV && path.startsWith('/uploads')) {
+      return path;
+    }
+
+    const apiBase = import.meta.env.REACT_APP_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    return `${apiBase}${path}`;
+  };
+
   return (
     <header className="header">
       <div className="header-container">
@@ -34,12 +48,12 @@ const Header = ({ onMenuClick }) => {
               <Menu size={24} />
             </button>
           </Tooltip>
-          
+
           <div className="header-search">
             <Search size={18} className="search-icon" />
-            <input 
-              type="text" 
-              placeholder="Search..." 
+            <input
+              type="text"
+              placeholder="Search..."
               className="search-input"
             />
           </div>
@@ -50,12 +64,16 @@ const Header = ({ onMenuClick }) => {
           <NotificationBell />
 
           <div className="user-dropdown">
-            <div 
+            <div
               className="user-profile-btn"
               onClick={() => setIsProfileOpen(!isProfileOpen)}
             >
               <div className="avatar">
-                {user?.name?.charAt(0).toUpperCase()}
+                {user?.profilePicture ? (
+                  <img src={getFullImageUrl(user.profilePicture)} alt="Profile" className="avatar-img" />
+                ) : (
+                  user?.name?.charAt(0).toUpperCase()
+                )}
               </div>
               <div className="user-info-header">
                 <span className="user-name-header">{user?.name}</span>

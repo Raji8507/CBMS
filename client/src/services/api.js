@@ -23,6 +23,10 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
+    console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
+    if (config.data instanceof FormData) {
+      console.log('  FormData keys:', Array.from(config.data.keys()));
+    }
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -60,6 +64,11 @@ export const authAPI = {
   register: (userData) => api.post('/auth/register', userData),
   forgotPassword: (data) => api.post('/auth/forgot-password', data),
   resetPassword: (token, data) => api.post(`/auth/reset-password/${token}`, data),
+  uploadProfilePicture: (formData) => api.put('/auth/profile/picture', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  }),
 };
 
 // Users API
@@ -93,6 +102,67 @@ export const budgetHeadsAPI = {
   updateBudgetHead: (id, data) => api.put(`/budget-heads/${id}`, data),
   deleteBudgetHead: (id) => api.delete(`/budget-heads/${id}`),
   getBudgetHeadStats: () => api.get('/budget-heads/stats'),
+};
+
+// Categories API (Mock implementation using localStorage)
+const STORAGE_KEY = 'cbms_categories';
+const DEFAULT_CATEGORIES = [
+  { id: 'academic', name: 'Academic', code: 'ACAD', color: '#28a745', description: 'Academic related expenses', isActive: true },
+  { id: 'infrastructure', name: 'Infrastructure', code: 'INFRA', color: '#007bff', description: 'Building and infrastructure', isActive: true },
+  { id: 'lab_equipment', name: 'Lab Equipment', code: 'LAB', color: '#17a2b8', description: 'Laboratory equipment and supplies', isActive: true },
+  { id: 'events', name: 'Events', code: 'EVENT', color: '#ffc107', description: 'College events and functions', isActive: true },
+  { id: 'maintenance', name: 'Maintenance', code: 'MAINT', color: '#6f42c1', description: 'Regular maintenance work', isActive: true },
+  { id: 'operations', name: 'Operations', code: 'OPS', color: '#fd7e14', description: 'Daily operations', isActive: true },
+  { id: 'other', name: 'Other', code: 'OTHER', color: '#6c757d', description: 'Miscellaneous expenses', isActive: true }
+];
+
+const getStoredCategories = () => {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (!stored) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_CATEGORIES));
+    return DEFAULT_CATEGORIES;
+  }
+  return JSON.parse(stored);
+};
+
+export const categoriesAPI = {
+  getCategories: async () => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return { data: { success: true, data: { categories: getStoredCategories() } } };
+  },
+  getCategoryById: async (id) => {
+    await new Promise(resolve => setTimeout(resolve, 200));
+    const categories = getStoredCategories();
+    const category = categories.find(c => c.id === id);
+    return { data: { success: !!category, data: { category } } };
+  },
+  createCategory: async (data) => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const categories = getStoredCategories();
+    const newCategory = { ...data, id: data.name.toLowerCase().replace(/\s+/g, '_') };
+    categories.push(newCategory);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(categories));
+    return { data: { success: true, data: { category: newCategory } } };
+  },
+  updateCategory: async (id, data) => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    let categories = getStoredCategories();
+    const index = categories.findIndex(c => c.id === id);
+    if (index !== -1) {
+      categories[index] = { ...categories[index], ...data };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(categories));
+      return { data: { success: true, data: { category: categories[index] } } };
+    }
+    return { data: { success: false, message: 'Category not found' } };
+  },
+  deleteCategory: async (id) => {
+    await new Promise(resolve => setTimeout(resolve, 400));
+    let categories = getStoredCategories();
+    categories = categories.filter(c => c.id !== id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(categories));
+    return { data: { success: true } };
+  }
 };
 
 // Allocations API

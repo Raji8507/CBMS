@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { allocationAPI } from '../services/api';
-import { Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, AlertCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -78,7 +78,7 @@ const YearComparison = () => {
 
     const ws = XLSX.utils.json_to_sheet(csvData);
     const csvOutput = XLSX.utils.sheet_to_csv(ws);
-    
+
     const blob = new Blob([csvOutput], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -91,24 +91,24 @@ const YearComparison = () => {
   };
 
   const handleExcelExport = () => {
-      if (!comparisonData?.departmentComparison) return;
+    if (!comparisonData?.departmentComparison) return;
 
-      const exportData = comparisonData.departmentComparison.map(dept => ({
-        'Department': dept.departmentName,
-        [`Allocation ${filters.currentYear}`]: dept.allocationChange.current,
-        [`Allocation ${filters.previousYear}`]: dept.allocationChange.previous,
-        'Allocation Change %': dept.allocationChange.changePercentage,
-        [`Spending ${filters.currentYear}`]: dept.spendingChange.current,
-        [`Spending ${filters.previousYear}`]: dept.spendingChange.previous,
-        'Spending Change %': dept.spendingChange.changePercentage,
-        [`Utilization ${filters.currentYear} %`]: dept.utilizationChange.current,
-        [`Utilization ${filters.previousYear} %`]: dept.utilizationChange.previous
-      }));
+    const exportData = comparisonData.departmentComparison.map(dept => ({
+      'Department': dept.departmentName,
+      [`Allocation ${filters.currentYear}`]: dept.allocationChange.current,
+      [`Allocation ${filters.previousYear}`]: dept.allocationChange.previous,
+      'Allocation Change %': dept.allocationChange.changePercentage,
+      [`Spending ${filters.currentYear}`]: dept.spendingChange.current,
+      [`Spending ${filters.previousYear}`]: dept.spendingChange.previous,
+      'Spending Change %': dept.spendingChange.changePercentage,
+      [`Utilization ${filters.currentYear} %`]: dept.utilizationChange.current,
+      [`Utilization ${filters.previousYear} %`]: dept.utilizationChange.previous
+    }));
 
-      const ws = XLSX.utils.json_to_sheet(exportData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Year Comparison');
-      XLSX.writeFile(wb, `year-comparison-${filters.currentYear}-vs-${filters.previousYear}.xlsx`);
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Year Comparison');
+    XLSX.writeFile(wb, `year-comparison-${filters.currentYear}-vs-${filters.previousYear}.xlsx`);
   };
 
   const handlePDFExport = () => {
@@ -125,9 +125,9 @@ const YearComparison = () => {
     doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 38);
 
     const columns = [
-      'Department', 
-      `Alloc ${filters.currentYear}`, 
-      `Alloc ${filters.previousYear}`, 
+      'Department',
+      `Alloc ${filters.currentYear}`,
+      `Alloc ${filters.previousYear}`,
       'Change %',
       `Spent ${filters.currentYear}`,
       `Spent ${filters.previousYear}`,
@@ -160,6 +160,7 @@ const YearComparison = () => {
     if (!comparisonData?.departmentComparison) return null;
 
     const departments = comparisonData.departmentComparison.map(d => d.departmentName);
+    if (departments.length === 0) return null;
     const previousYearData = comparisonData.departmentComparison.map(d => d.allocationChange.previous);
     const currentYearData = comparisonData.departmentComparison.map(d => d.allocationChange.current);
 
@@ -201,6 +202,7 @@ const YearComparison = () => {
     if (!comparisonData?.departmentComparison) return null;
 
     const departments = comparisonData.departmentComparison.map(d => d.departmentName);
+    if (departments.length === 0) return null;
     const previousYearData = comparisonData.departmentComparison.map(d => d.spendingChange.previous);
     const currentYearData = comparisonData.departmentComparison.map(d => d.spendingChange.current);
 
@@ -509,17 +511,17 @@ const YearComparison = () => {
             </select>
           </div>
         </div>
-        
+
         <div className="export-actions">
-           <button className="btn btn-outline" onClick={handleExportCSV} title="Export CSV">
-              <FileText size={18} />
-           </button>
-           <button className="btn btn-outline" onClick={handleExcelExport} title="Export Excel">
-              <FileSpreadsheet size={18} />
-           </button>
-           <button className="btn btn-outline" onClick={handlePDFExport} title="Export PDF">
-              <Download size={18} />
-           </button>
+          <button className="btn btn-outline" onClick={handleExportCSV} title="Export CSV">
+            <FileText size={18} />
+          </button>
+          <button className="btn btn-outline" onClick={handleExcelExport} title="Export Excel">
+            <FileSpreadsheet size={18} />
+          </button>
+          <button className="btn btn-outline" onClick={handlePDFExport} title="Export PDF">
+            <Download size={18} />
+          </button>
         </div>
       </div>
 
@@ -532,16 +534,30 @@ const YearComparison = () => {
       {comparisonData && !loading && (
         <div className="year-comparison-results">
           {renderOverallComparison()}
-          
+
           <div className="charts-section">
-             <div className="chart-card">
-               <h3>Allocation Comparison</h3>
-               <ReactECharts option={getAllocationComparisonOption()} style={{ height: '350px' }} />
-             </div>
-             <div className="chart-card">
-               <h3>Spending Comparison</h3>
+            <div className="chart-card">
+              <h3>Allocation Comparison</h3>
+              {getAllocationComparisonOption() ? (
+                <ReactECharts option={getAllocationComparisonOption()} style={{ height: '350px' }} />
+              ) : (
+                <div className="no-data-display">
+                  <AlertCircle size={40} />
+                  <p>No allocation data available for comparison</p>
+                </div>
+              )}
+            </div>
+            <div className="chart-card">
+              <h3>Spending Comparison</h3>
+              {getSpendingComparisonOption() ? (
                 <ReactECharts option={getSpendingComparisonOption()} style={{ height: '350px' }} />
-             </div>
+              ) : (
+                <div className="no-data-display">
+                  <AlertCircle size={40} />
+                  <p>No spending data available for comparison</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {renderDepartmentComparison()}

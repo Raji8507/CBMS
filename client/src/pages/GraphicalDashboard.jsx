@@ -14,7 +14,7 @@ const GraphicalDashboard = () => {
   const [yearComparison, setYearComparison] = useState(null);
   const [timeRange, setTimeRange] = useState('current');
   const [refreshInterval, setRefreshInterval] = useState(null);
-  
+
   const currentFY = getCurrentFinancialYear();
   const previousFY = getPreviousFinancialYear();
 
@@ -281,6 +281,9 @@ const GraphicalDashboard = () => {
     }
 
     const departments = Object.keys(yearComparison.departmentComparison);
+    if (departments.length === 0) {
+      return null;
+    }
     const previousYearData = departments.map(dept => yearComparison.departmentComparison[dept].previous.spent);
     const currentYearData = departments.map(dept => yearComparison.departmentComparison[dept].current.spent);
 
@@ -338,7 +341,7 @@ const GraphicalDashboard = () => {
       case 'principal':
         return 'Management Overview Dashboard';
       case 'admin':
-        return 'System Administration Dashboard';
+        return 'Administration Dashboard';
       default:
         return 'Budget Management Dashboard';
     }
@@ -439,8 +442,8 @@ const GraphicalDashboard = () => {
               {getBudgetUtilizationOption() ? (
                 <ReactECharts option={getBudgetUtilizationOption()} style={{ height: '100%', width: '100%' }} />
               ) : (
-                <div className="no-data-message">
-                  <AlertCircle size={48} />
+                <div className="no-data-display">
+                  <AlertCircle size={40} />
                   <p>No budget allocation data available</p>
                 </div>
               )}
@@ -457,8 +460,8 @@ const GraphicalDashboard = () => {
               {getBudgetHeadDistributionOption() ? (
                 <ReactECharts option={getBudgetHeadDistributionOption()} style={{ height: '100%', width: '100%' }} />
               ) : (
-                <div className="no-data-message">
-                  <AlertCircle size={48} />
+                <div className="no-data-display">
+                  <AlertCircle size={40} />
                   <p>No budget head data available</p>
                 </div>
               )}
@@ -476,8 +479,8 @@ const GraphicalDashboard = () => {
                 {getDepartmentComparisonOption() ? (
                   <ReactECharts option={getDepartmentComparisonOption()} style={{ height: '100%', width: '100%' }} />
                 ) : (
-                  <div className="no-data-message">
-                    <AlertCircle size={48} />
+                  <div className="no-data-display">
+                    <AlertCircle size={40} />
                     <p>No department data available</p>
                   </div>
                 )}
@@ -495,8 +498,8 @@ const GraphicalDashboard = () => {
               {getExpenditureTrendOption() ? (
                 <ReactECharts option={getExpenditureTrendOption()} style={{ height: '100%', width: '100%' }} />
               ) : (
-                <div className="no-data-message">
-                  <AlertCircle size={48} />
+                <div className="no-data-display">
+                  <AlertCircle size={40} />
                   <p>No expenditure data available</p>
                 </div>
               )}
@@ -518,8 +521,8 @@ const GraphicalDashboard = () => {
                 {getYearComparisonOption() ? (
                   <ReactECharts option={getYearComparisonOption()} style={{ height: '100%', width: '100%' }} />
                 ) : (
-                  <div className="no-data-message">
-                    <AlertCircle size={48} />
+                  <div className="no-data-display">
+                    <AlertCircle size={40} />
                     <p>No previous financial year data available</p>
                     <p className="no-data-hint">Please ensure data exists for both current and previous financial years</p>
                   </div>
@@ -530,7 +533,7 @@ const GraphicalDashboard = () => {
         </div>
 
         {/* Real-time Status */}
-        <div className="status-section">
+        {/* <div className="status-section">
           <div className="status-indicator">
             <div className="status-dot live"></div>
             <span>Live Data</span>
@@ -538,7 +541,7 @@ const GraphicalDashboard = () => {
           <div className="last-updated">
             Last updated: {new Date().toLocaleTimeString()}
           </div>
-        </div>
+        </div> */}
       </div>
     </ErrorBoundary>
   );

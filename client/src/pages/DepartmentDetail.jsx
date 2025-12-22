@@ -13,7 +13,7 @@ const DepartmentDetail = () => {
     const [departmentData, setDepartmentData] = useState(null);
     const currentFY = getCurrentFinancialYear();
     const previousFY = getPreviousFinancialYear();
-    
+
     // Simple logic to get a year before previous
     const getFYMinus2 = () => {
         const [start] = previousFY.split('-');
@@ -347,11 +347,19 @@ const DepartmentDetail = () => {
             )}
 
             {/* Budget Head Breakdown Chart */}
-            {getBudgetHeadBreakdownChart() && (
+            {getBudgetHeadBreakdownChart() ? (
                 <div className="chart-section">
                     <h2>Budget Head-wise Allocation & Utilization</h2>
                     <div className="chart-container">
                         <ReactECharts option={getBudgetHeadBreakdownChart()} style={{ height: '400px', width: '100%' }} />
+                    </div>
+                </div>
+            ) : (
+                <div className="chart-section">
+                    <h2>Budget Head-wise Allocation & Utilization</h2>
+                    <div className="no-data-display">
+                        <AlertCircle size={40} />
+                        <p>No budget breakdown available for this financial year</p>
                     </div>
                 </div>
             )}

@@ -137,21 +137,21 @@ const Expenditures = () => {
                                         <td className="text-right font-medium">{formatCurrency(exp.billAmount)}</td>
                                         <td>
                                             <span className={`status-badge ${getStatusColor(exp.status)}`}>
-                                                {exp.status.charAt(0).toUpperCase() + exp.status.slice(1)}
+                                                {exp.status.toUpperCase()}
                                             </span>
                                         </td>
                                         <td>
                                             <div className="action-buttons">
                                                 <Tooltip text="View Details" position="top">
-                                                    <button className="btn-icon secondary" onClick={() => handleView(exp)}>
-                                                        <Eye size={18} />
+                                                    <button className="btn btn-sm btn-secondary" onClick={() => handleView(exp)}>
+                                                        <Eye size={16} />
                                                     </button>
                                                 </Tooltip>
 
                                                 {exp.status === 'rejected' && (
                                                     <Tooltip text="Resubmit" position="top">
-                                                        <button className="btn-icon primary" onClick={() => handleResubmit(exp._id)}>
-                                                            <RotateCcw size={18} />
+                                                        <button className="btn btn-sm btn-primary" onClick={() => handleResubmit(exp._id)}>
+                                                            <RotateCcw size={16} />
                                                         </button>
                                                     </Tooltip>
                                                 )}

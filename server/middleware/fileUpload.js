@@ -261,8 +261,77 @@ const cleanupOldFiles = (olderThanDays = 30) => {
   cleanupDirectory(uploadDir);
 };
 
+const profilePictureUpload = upload.single('profilePicture');
+
+const handleProfilePictureUpload = (req, res, next) => {
+  console.log('  [MULTER-TRACE] Entering handleProfilePictureUpload');
+
+  profilePictureUpload(req, res, async (err) => {
+    console.log('  [MULTER-TRACE] Multer callback triggered');
+
+    if (err instanceof multer.MulterError) {
+      console.error('  [MULTER-ERROR]', err.code, err.message);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ success: false, message: 'File size too large. Max 10MB allowed.' });
+      }
+      return res.status(400).json({ success: false, message: err.message });
+    } else if (err) {
+      console.error('  [NON-MULTER-ERROR]', err.message);
+      return res.status(400).json({ success: false, message: err.message });
+    }
+
+    if (!req.file) {
+      console.warn('  [MULTER-WARN] No file found in request. Body:', JSON.stringify(req.body));
+      return next();
+    }
+
+    try {
+      console.log(`  [MULTER] Received file: ${req.file.originalname} (${req.file.size} bytes)`);
+      console.log(`  [MULTER] Path: ${req.file.path}`);
+
+      // Virus scan if scanner is active
+      if (clamScan) {
+        console.log('  [CLAMAV] Performing scan...');
+        const result = await clamScan.is_infected(req.file.path);
+        if (result.is_infected) {
+          console.warn(`  [CLAMAV] Infected file detected: ${result.viruses.join(', ')}`);
+          fs.unlinkSync(req.file.path);
+          return res.status(400).json({
+            success: false,
+            message: `Virus detected and file removed: ${result.viruses.join(', ')}`
+          });
+        }
+        console.log('  [CLAMAV] Scan clean.');
+      }
+
+      let deptId = req.body.departmentId || req.user?.department || 'general';
+      if (deptId && typeof deptId === 'object' && deptId._id) {
+        deptId = String(deptId._id);
+      } else {
+        deptId = String(deptId);
+      }
+      console.log(`  [MULTER] Department ID resolved as: ${deptId}`);
+
+      req.uploadedFile = {
+        filename: req.file.filename,
+        path: req.file.path,
+        url: `/uploads/${deptId}/${req.file.filename}`
+      };
+      console.log(`  [MULTER] Upload processed. URL: ${req.uploadedFile.url}`);
+      next();
+    } catch (error) {
+      console.error('  [MULTER] processing error:', error);
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      res.status(500).json({ success: false, message: 'Error processing uploaded image' });
+    }
+  });
+};
+
 module.exports = {
   handleFileUpload,
+  handleProfilePictureUpload,
   serveFiles,
   deleteFile,
   cleanupOldFiles,

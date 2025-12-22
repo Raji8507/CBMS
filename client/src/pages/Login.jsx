@@ -119,11 +119,6 @@ const Login = () => {
               <Link to="/forgot-password">Forgot Password?</Link>
             </div>
 
-            {/* <div className="signup-link-container">
-              <span>Don't have an account? </span>
-              <Link to="/signup">Sign up</Link>
-            </div> */}
-
             <button type="submit" className="signin-btn" disabled={isLoading}>
               {isLoading ? 'Signing In...' : 'Sign In'}
             </button>

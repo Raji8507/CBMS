@@ -41,7 +41,7 @@
   position: absolute;
   top: 20%;
   right: 20%;
-  background: #1a237e;
+  background: var(--primary);
   color: white;
   width: 40px;
   height: 40px;
@@ -80,13 +80,13 @@
 .brand-logo h1 {
   font-size: 2rem;
   font-weight: 800;
-  color: #1a237e;
+  color: var(--primary);
 }
 
 .brand-section h2 {
   font-size: 2.5rem;
   font-weight: 800;
-  color: #1a237e;
+  color: var(--primary);
 }
 
 .brand-section p {
@@ -97,7 +97,7 @@
 /* Right Section */
 .login-right {
   flex: 1;
-  background: #1a237e;
+  background: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -149,8 +149,8 @@
 
 .form-group.floating input:focus {
   outline: none;
-  border-color: #1a237e;
-  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
 }
 
 /* Placeholder-like label */
@@ -173,7 +173,7 @@
   top: 0;
   transform: translateY(-50%);
   font-size: 0.75rem;
-  color: #1a237e;
+  color: var(--primary);
   background: white;
   /* Ensure it covers the border */
   z-index: 5;
@@ -206,7 +206,7 @@
 }
 
 .form-footer a {
-  color: #1a237e;
+  color: var(--primary);
   font-size: 0.875rem;
   font-weight: 600;
   text-decoration: none;
@@ -214,7 +214,7 @@
 
 .signin-btn {
   margin-top: 1rem;
-  background: #1a237e;
+  background: var(--primary);
   color: white;
   border: none;
   padding: 1rem;
@@ -230,7 +230,7 @@
 
 
 .signin-btn:hover {
-  background: #0d47a1;
+  background: var(--primary-hover);
 }
 
 .support-link {

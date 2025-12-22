@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import { notificationAPI } from '../../services/api';
 import Tooltip from '../Tooltip/Tooltip';
 import { Bell, FileText, CheckCircle, XCircle, DollarSign, AlertTriangle, Clock, Megaphone, Trash2 } from 'lucide-react';
@@ -7,6 +8,7 @@ import './NotificationBell.css';
 
 const NotificationBell = () => {
   const { user } = useAuth();
+  const { socket } = useSocket();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -15,11 +17,28 @@ const NotificationBell = () => {
   useEffect(() => {
     if (user) {
       fetchNotifications();
-      // Set up polling for new notifications
-      const interval = setInterval(fetchNotifications, 30000); // Check every 30 seconds
-      return () => clearInterval(interval);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on('notification', (newNotification) => {
+        console.log('[SOCKET] New notification received:', newNotification);
+        setNotifications(prev => [newNotification, ...prev].slice(0, 10)); // Keep only recent 10
+        setUnreadCount(prev => prev + 1);
+
+        // Play notification sound if browser allows
+        try {
+          const audio = new Audio('/notification.mp3'); // Ensure this file exists
+          audio.play().catch(() => { }); // Ignore errors (e.g., user interaction required)
+        } catch (e) { }
+      });
+
+      return () => {
+        socket.off('notification');
+      };
+    }
+  }, [socket]);
 
   const fetchNotifications = async () => {
     try {
