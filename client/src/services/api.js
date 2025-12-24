@@ -229,6 +229,21 @@ export const reportAPI = {
   getAllocationReport: (params) => api.get('/reports/allocations', { params }),
   getDashboardReport: (params) => api.get('/reports/dashboard', { params }),
   getAuditReport: (params) => api.get('/reports/audit', { params }),
+  getConsolidatedBudgetReport: (params) => api.get('/consolidated-reports', { params }),
+  getBudgetUtilizationDashboard: (params) => api.get('/consolidated-reports/utilization', { params }),
+  getFundUtilizationTrend: (params) => api.get('/consolidated-reports/trend', { params }),
+};
+
+// Budget Proposals API
+export const budgetProposalAPI = {
+  getBudgetProposals: (params) => api.get('/budget-proposals', { params }),
+  getBudgetProposalById: (id) => api.get(`/budget-proposals/${id}`),
+  createBudgetProposal: (data) => api.post('/budget-proposals', data),
+  updateBudgetProposal: (id, data) => api.put(`/budget-proposals/${id}`, data),
+  submitBudgetProposal: (id) => api.put(`/budget-proposals/${id}/submit`),
+  approveBudgetProposal: (id, data) => api.put(`/budget-proposals/${id}/approve`, data),
+  rejectBudgetProposal: (id, data) => api.put(`/budget-proposals/${id}/reject`, data),
+  getBudgetProposalsStats: (params) => api.get('/budget-proposals/stats', { params }),
 };
 
 // Files API

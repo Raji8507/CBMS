@@ -16,6 +16,8 @@ const expenditureRoutes = require('./routes/expenditures');
 const fileRoutes = require('./routes/files');
 const auditLogRoutes = require('./routes/auditLogs');
 const reportRoutes = require('./routes/reports');
+const consolidatedReportRoutes = require('./routes/consolidatedReports');
+const budgetProposalRoutes = require('./routes/budgetProposals');
 const systemRoutes = require('./routes/system');
 const pushRoutes = require('./routes/pushRoutes');
 
@@ -111,6 +113,8 @@ app.use('/api/expenditures', expenditureRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/audit-logs', auditLogRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/consolidated-reports', consolidatedReportRoutes);
+app.use('/api/budget-proposals', budgetProposalRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/push', pushRoutes);
 
