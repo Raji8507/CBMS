@@ -5,6 +5,7 @@ const Allocation = require('../models/Allocation');
 const AllocationHistory = require('../models/AllocationHistory');
 const AuditLog = require('../models/AuditLog');
 const { recordAuditLog } = require('../utils/auditService');
+const { notifyProposalSubmission, notifyProposalStatusChange } = require('../utils/notificationService');
 
 // @desc    Get all budget proposals
 // @route   GET /api/budget-proposals
@@ -15,15 +16,35 @@ const getBudgetProposals = async (req, res) => {
 
     const query = {};
     if (financialYear) query.financialYear = financialYear;
-    if (status) query.status = status;
 
-    // Department and HOD users can only see their own department's proposals
+    // Status filtering
+    if (status) {
+      query.status = status;
+    }
+
+    // Role-based visibility and default filtering if status not provided
     if (['department', 'hod'].includes(req.user.role)) {
       query.department = req.user.department;
     } else if (department) {
-      // Admin, principal, vice_principal, office, auditor can filter by department
       query.department = department;
     }
+
+    // Smart default filtering based on role if no status is explicitly requested
+    if (!status) {
+      if (req.user.role === 'hod') {
+        // HOD can see all department proposals in history/list views
+        // Only restrict to 'submitted' if explicitly asked (like in approvals queue)
+        // For standard GET, we allow all except maybe drafts if not requested
+      } else if (['principal', 'vice_principal'].includes(req.user.role)) {
+        // Default Principal view: content verified by HOD
+        if (!query.status) query.status = 'verified_by_hod';
+      } else if (req.user.role === 'office') {
+        // Default Office view: content verified by Principal
+        if (!query.status) query.status = 'verified_by_principal';
+      }
+    }
+
+    console.log(`[Debug] getBudgetProposals - Final Query:`, query);
 
     const skip = (page - 1) * limit;
 
@@ -70,6 +91,7 @@ const getBudgetProposalById = async (req, res) => {
       .populate('proposalItems.budgetHead', 'name category budgetType')
       .populate('submittedBy', 'name email')
       .populate('approvedBy', 'name email')
+      .populate('approvalSteps.approver', 'name email role')
       .populate('lastModifiedBy', 'name email');
 
     if (!proposal) {
@@ -79,18 +101,9 @@ const getBudgetProposalById = async (req, res) => {
       });
     }
 
-    // Department and HOD users can only view their own department's proposals
-    if (['department', 'hod'].includes(req.user.role) &&
-      proposal.department._id.toString() !== req.user.department.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not have permission to view this proposal'
-      });
-    }
-
     res.status(200).json({
       success: true,
-      data: { proposal }
+      data: proposal
     });
   } catch (error) {
     res.status(500).json({
@@ -101,99 +114,79 @@ const getBudgetProposalById = async (req, res) => {
   }
 };
 
-// @desc    Create budget proposal
-// @route   POST /api/budget-proposals
+// @desc    Mark proposal as read by current user
+// @route   PUT /api/budget-proposals/:id/read
 // @access  Private
-const createBudgetProposal = async (req, res) => {
+const markProposalAsRead = async (req, res) => {
   try {
-    const { financialYear, department, proposalItems, notes, status } = req.body;
-
-    // Validate status if provided
-    if (status && !['draft', 'submitted'].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid status provided for creation'
-      });
-    }
-
-    // Department and HOD users can only create proposals for their own department
-    let deptToUse = department;
-    if (['department', 'hod'].includes(req.user.role)) {
-      deptToUse = req.user.department.toString();
-      if (department && department !== req.user.department.toString()) {
-        return res.status(403).json({
-          success: false,
-          message: 'You can only create proposals for your own department'
-        });
-      }
-    }
-
-    // Validate department exists
-    const departmentExists = await Department.findById(deptToUse);
-    if (!departmentExists) {
+    const proposal = await BudgetProposal.findById(req.params.id);
+    if (!proposal) {
       return res.status(404).json({
         success: false,
-        message: 'Department not found'
+        message: 'Budget proposal not found'
       });
     }
 
-    // Validate budget heads exist
-    const budgetHeadIds = proposalItems.map(item => item.budgetHead);
-    const budgetHeads = await BudgetHead.find({ _id: { $in: budgetHeadIds } });
-    if (budgetHeads.length !== budgetHeadIds.length) {
-      return res.status(400).json({
-        success: false,
-        message: 'One or more budget heads are invalid'
-      });
+    if (!proposal.readBy.includes(req.user._id)) {
+      proposal.readBy.push(req.user._id);
+      await proposal.save();
     }
 
-    // Check if proposal already exists for this FY and department
+    res.status(200).json({
+      success: true,
+      message: 'Proposal marked as read'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error marking proposal as read',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Create budget proposal
+// @route   POST /api/budget-proposals
+// @access  Private (HOD/Staff)
+const createBudgetProposal = async (req, res) => {
+  try {
+    const { financialYear, proposalItems, notes } = req.body;
+
+    // Check if a proposal already exists for this department and year
     const existingProposal = await BudgetProposal.findOne({
       financialYear,
-      department,
-      status: { $in: ['draft', 'submitted'] }
+      department: req.user.department,
+      status: { $ne: 'rejected' }
     });
 
-    if (existingProposal) {
+    if (existingProposal && existingProposal.status !== 'draft') {
       return res.status(400).json({
         success: false,
-        message: 'Budget proposal already exists for this financial year and department'
+        message: `A proposal already exists for ${financialYear} and is currently ${existingProposal.status}`
       });
     }
 
     const proposal = await BudgetProposal.create({
       financialYear,
-      department: deptToUse,
+      department: req.user.department,
       proposalItems,
       notes,
-      status: status || 'draft',
-      submittedBy: req.user._id
+      submittedBy: req.user._id,
+      lastModifiedBy: req.user._id,
+      status: 'draft'
     });
 
-    // Populate the created proposal
-    const populatedProposal = await BudgetProposal.findById(proposal._id)
-      .populate('department', 'name code')
-      .populate('proposalItems.budgetHead', 'name category budgetType')
-      .populate('submittedBy', 'name email');
-
-    // Log audit
     await recordAuditLog({
       eventType: 'budget_proposal_created',
       req,
       targetEntity: 'BudgetProposal',
       targetId: proposal._id,
-      details: {
-        financialYear,
-        department: deptToUse,
-        itemCount: proposalItems.length
-      },
-      newValues: populatedProposal
+      details: { financialYear }
     });
 
     res.status(201).json({
       success: true,
-      data: { proposal: populatedProposal },
-      message: 'Budget proposal created successfully'
+      data: proposal
     });
   } catch (error) {
     res.status(500).json({
@@ -206,17 +199,12 @@ const createBudgetProposal = async (req, res) => {
 
 // @desc    Update budget proposal
 // @route   PUT /api/budget-proposals/:id
-// @access  Private
+// @access  Private (HOD/Staff)
 const updateBudgetProposal = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { proposalItems, notes, financialYear, department, status } = req.body;
+    const { proposalItems, notes } = req.body;
 
-    console.log('[Debug] updateBudgetProposal called with id:', id);
-    console.log('[Debug] Request body:', req.body);
-    console.log('[Debug] User info - id:', req.user._id, 'role:', req.user.role, 'department:', req.user.department);
-
-    const proposal = await BudgetProposal.findById(id).populate('department');
+    let proposal = await BudgetProposal.findById(req.params.id);
     if (!proposal) {
       return res.status(404).json({
         success: false,
@@ -224,132 +212,46 @@ const updateBudgetProposal = async (req, res) => {
       });
     }
 
-    // Department and HOD users can only edit their own department's proposals
-    if (['department', 'hod'].includes(req.user.role)) {
-      if (proposal.department._id.toString() !== req.user.department.toString()) {
-        return res.status(403).json({
-          success: false,
-          message: 'You can only edit proposals from your own department'
-        });
-      }
-      // Department users can only edit their own proposals; HOD can edit any in their dept
-      if (req.user.role === 'department' && proposal.submittedBy.toString() !== req.user._id.toString()) {
-        return res.status(403).json({
-          success: false,
-          message: 'You can only edit your own proposals'
-        });
-      }
-    }
-
-    console.log('[Debug] updateBudgetProposal called with id:', id);
-    console.log('[Debug] Request body:', req.body);
-    console.log('[Debug] User info - id:', req.user._id, 'role:', req.user.role, 'department:', req.user.department);
-
-    // Can only edit draft proposals
-    if (proposal.status !== 'draft' && proposal.status !== 'revised') {
-      console.log('[Debug] Cannot edit - status is:', proposal.status);
+    // Only allow updating drafts or revised proposals
+    if (!['draft', 'revised'].includes(proposal.status)) {
       return res.status(400).json({
         success: false,
-        message: 'Can only edit draft or revised proposals'
+        message: 'Only draft or revised proposals can be updated'
       });
     }
 
-    // Extract data from request body
-    const { proposalItems: bodyProposalItems, notes: bodyNotes, financialYear: bodyFinancialYear, status: bodyStatus } = req.body;
-
-    console.log('[Debug] Extracted - proposalItems count:', bodyProposalItems?.length, 'notes:', bodyNotes?.substring(0, 50), 'FY:', bodyFinancialYear, 'Status:', bodyStatus);
-
-    // Validate budget heads if updating items
-    if (bodyProposalItems && Array.isArray(bodyProposalItems)) {
-      console.log('[Debug] Validating proposalItems...');
-      const budgetHeadIds = bodyProposalItems.map(item => item.budgetHead).filter(id => id);
-
-      if (budgetHeadIds.length === 0) {
-        console.log('[Debug] No valid budget head IDs found');
-        return res.status(400).json({
-          success: false,
-          message: 'All proposal items must have a budget head selected',
-          error: 'Missing budgetHead in items'
-        });
-      }
-
-      const budgetHeads = await BudgetHead.find({ _id: { $in: budgetHeadIds } });
-      console.log('[Debug] Found budget heads:', budgetHeads.length, 'Expected:', budgetHeadIds.length);
-
-      if (budgetHeads.length !== budgetHeadIds.length) {
-        console.log('[Debug] Budget head validation failed');
-        return res.status(400).json({
-          success: false,
-          message: 'One or more budget heads are invalid',
-          provided: budgetHeadIds.length,
-          found: budgetHeads.length
-        });
-      }
-    }
-
-    const oldData = { ...proposal.toObject() };
-
-    // Update fields
-    if (bodyProposalItems) proposal.proposalItems = bodyProposalItems;
-    if (bodyNotes !== undefined) proposal.notes = bodyNotes;
-    if (bodyFinancialYear) proposal.financialYear = bodyFinancialYear;
-    if (bodyStatus && ['draft', 'submitted'].includes(bodyStatus)) {
-      proposal.status = bodyStatus;
-    }
+    proposal.proposalItems = proposalItems || proposal.proposalItems;
+    proposal.notes = notes || proposal.notes;
     proposal.lastModifiedBy = req.user._id;
 
-    console.log('[Debug] Saving proposal...');
     await proposal.save();
-    console.log('[Debug] Proposal saved successfully');
 
-    const updatedProposal = await BudgetProposal.findById(id)
-      .populate('department', 'name code')
-      .populate('proposalItems.budgetHead', 'name category budgetType')
-      .populate('submittedBy', 'name email');
-
-    // Log audit
     await recordAuditLog({
       eventType: 'budget_proposal_updated',
       req,
       targetEntity: 'BudgetProposal',
-      targetId: id,
-      details: {
-        financialYear: bodyFinancialYear || proposal.financialYear,
-        itemCount: bodyProposalItems?.length || proposal.proposalItems.length
-      },
-      previousValues: oldData,
-      newValues: updatedProposal.toObject()
+      targetId: proposal._id
     });
 
     res.status(200).json({
       success: true,
-      data: { proposal: updatedProposal },
-      message: 'Budget proposal updated successfully'
+      data: proposal
     });
   } catch (error) {
-    console.error('[Error] updateBudgetProposal error:', error.message);
-    console.error('[Error] Error stack:', error.stack);
-    if (error.name === 'ValidationError') {
-      console.error('[Error] Validation error details:', Object.keys(error.errors).map(key => `${key}: ${error.errors[key].message} `));
-    }
     res.status(500).json({
       success: false,
       message: 'Error updating budget proposal',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-      validationErrors: process.env.NODE_ENV === 'development' && error.name === 'ValidationError' ?
-        Object.keys(error.errors).map(key => ({ field: key, message: error.errors[key].message })) : undefined
+      error: error.message
     });
   }
 };
 
 // @desc    Submit budget proposal
 // @route   PUT /api/budget-proposals/:id/submit
-// @access  Private
+// @access  Private (HOD/Staff)
 const submitBudgetProposal = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const proposal = await BudgetProposal.findById(id).populate('department');
+    let proposal = await BudgetProposal.findById(req.params.id);
     if (!proposal) {
       return res.status(404).json({
         success: false,
@@ -357,63 +259,33 @@ const submitBudgetProposal = async (req, res) => {
       });
     }
 
-    // Department and HOD users can only submit their own department's proposals
-    if (['department', 'hod'].includes(req.user.role)) {
-      if (proposal.department._id.toString() !== req.user.department.toString()) {
-        return res.status(403).json({
-          success: false,
-          message: 'You can only submit proposals from your own department'
-        });
-      }
-      // They can only submit their own proposals (or their department's if they're HOD)
-      // Allow HOD to submit department proposals too
-      if (req.user.role === 'department' && proposal.submittedBy.toString() !== req.user._id.toString()) {
-        return res.status(403).json({
-          success: false,
-          message: 'You can only submit your own proposals'
-        });
-      }
-    }
-
-    if (proposal.status !== 'draft' && proposal.status !== 'revised') {
+    if (!['draft', 'revised'].includes(proposal.status)) {
       return res.status(400).json({
         success: false,
         message: 'Only draft or revised proposals can be submitted'
       });
     }
 
-    if (!proposal.proposalItems || proposal.proposalItems.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Proposal must have at least one item'
-      });
-    }
-
     proposal.status = 'submitted';
     proposal.submittedDate = new Date();
     proposal.lastModifiedBy = req.user._id;
+
     await proposal.save();
 
-    const updatedProposal = await BudgetProposal.findById(id)
-      .populate('department', 'name code')
-      .populate('proposalItems.budgetHead', 'name category budgetType')
-      .populate('submittedBy', 'name email');
-
-    // Log audit
     await recordAuditLog({
       eventType: 'budget_proposal_submitted',
       req,
       targetEntity: 'BudgetProposal',
-      targetId: id,
-      details: {
-        submittedDate: proposal.submittedDate
-      }
+      targetId: proposal._id
     });
+
+    // Notify HOD
+    const populatedProposal = await BudgetProposal.findById(proposal._id).populate('department', 'name');
+    await notifyProposalSubmission(populatedProposal);
 
     res.status(200).json({
       success: true,
-      data: { proposal: updatedProposal },
-      message: 'Budget proposal submitted successfully'
+      data: proposal
     });
   } catch (error) {
     res.status(500).json({
@@ -423,6 +295,7 @@ const submitBudgetProposal = async (req, res) => {
     });
   }
 };
+
 
 // @desc    Approve budget proposal
 // @route   PUT /api/budget-proposals/:id/approve
@@ -440,20 +313,28 @@ const approveBudgetProposal = async (req, res) => {
       });
     }
 
-    // Role check for approval
-    const allowedApprovalRoles = ['admin', 'principal', 'vice_principal', 'office'];
+    // Role check for approval - Office Only (Final Step)
+    const allowedApprovalRoles = ['office', 'admin'];
     if (!allowedApprovalRoles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: 'You are not authorized to approve budget proposals'
+        message: 'Only Office or Admin can perform final approval and budget allocation'
       });
     }
 
-    // Must be verified or submitted
-    if (!['submitted', 'verified'].includes(proposal.status)) {
+    // Must be read by the approver
+    if (!proposal.readBy.includes(req.user._id)) {
       return res.status(400).json({
         success: false,
-        message: 'Only submitted or verified proposals can be approved'
+        message: 'You must read the proposal before approving it'
+      });
+    }
+
+    // Must be verified by Principal/VP first
+    if (proposal.status !== 'verified_by_principal' && proposal.status !== 'verified') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only proposals verified by Principal/VP can be approved by Office'
       });
     }
 
@@ -478,6 +359,18 @@ const approveBudgetProposal = async (req, res) => {
     const createdAllocations = [];
     const allocationErrors = [];
 
+    // Extract approved amounts from request body (if provided)
+    // Structure: approvedAmounts: [{ budgetHead: 'id', amount: 1000 }]
+    const { approvedAmounts } = req.body;
+    const approvedAmountsMap = {};
+    if (approvedAmounts && Array.isArray(approvedAmounts)) {
+      approvedAmounts.forEach(item => {
+        if (item.budgetHead && item.amount !== undefined) {
+          approvedAmountsMap[item.budgetHead.toString()] = parseFloat(item.amount);
+        }
+      });
+    }
+
     try {
       for (const item of proposal.proposalItems) {
         try {
@@ -489,7 +382,7 @@ const approveBudgetProposal = async (req, res) => {
           });
 
           if (existingAllocation) {
-            console.log(`Allocation already exists for ${item.budgetHead}, skipping auto - creation`);
+            console.log(`Allocation already exists for ${item.budgetHead}, skipping auto-creation`);
             allocationErrors.push({
               budgetHead: item.budgetHead,
               reason: 'Allocation already exists'
@@ -497,12 +390,23 @@ const approveBudgetProposal = async (req, res) => {
             continue;
           }
 
+          // Determine final allocated amount
+          // Use override if present, otherwise default to proposed amount
+          let finalAmount = item.proposedAmount;
+          const bhId = item.budgetHead.toString();
+          if (approvedAmountsMap[bhId] !== undefined) {
+            const overrideAmount = approvedAmountsMap[bhId];
+            if (!isNaN(overrideAmount) && overrideAmount >= 0) {
+              finalAmount = overrideAmount;
+            }
+          }
+
           // Create allocation
           const allocation = await Allocation.create({
             financialYear: proposal.financialYear,
             department: proposal.department,
             budgetHead: item.budgetHead,
-            allocatedAmount: item.proposedAmount,
+            allocatedAmount: finalAmount,
             remarks: item.justification || 'Created from approved budget proposal',
             sourceProposalId: proposal._id,
             status: 'active',
@@ -523,7 +427,7 @@ const approveBudgetProposal = async (req, res) => {
               remarks: allocation.remarks
             },
             changes: {},
-            changeReason: `Auto - created from approved budget proposal ${proposal._id} `,
+            changeReason: `Auto-created from approved budget proposal ${proposal._id}`,
             changedBy: req.user._id
           });
 
@@ -538,7 +442,6 @@ const approveBudgetProposal = async (req, res) => {
       }
     } catch (error) {
       console.error('Error auto-creating allocations:', error.message);
-      // Don't fail the approval, just log the error
     }
 
     const updatedProposal = await BudgetProposal.findById(id)
@@ -596,6 +499,26 @@ const verifyBudgetProposal = async (req, res) => {
     }
 
     // Check permissions
+    // HOD verifies first. Then Principal/VP verifies.
+    const allowedVerifyRoles = ['hod', 'principal', 'vice_principal'];
+    if (!allowedVerifyRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to verify budget proposals'
+      });
+    }
+
+    // Must be read by the verifier
+    if (!proposal.readBy.includes(req.user._id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'You must read the proposal before verifying it'
+      });
+    }
+
+    let searchStatus = '';
+    let nextStatus = '';
+
     if (req.user.role === 'hod') {
       if (proposal.department.toString() !== req.user.department.toString()) {
         return res.status(403).json({
@@ -603,21 +526,35 @@ const verifyBudgetProposal = async (req, res) => {
           message: 'You can only verify proposals from your department'
         });
       }
-    } else if (req.user.role !== 'office' && req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only HOD or Office can verify budget proposals'
-      });
+
+      if (proposal.status !== 'submitted') {
+        return res.status(400).json({
+          success: false,
+          message: 'HOD can only verify submitted proposals'
+        });
+      }
+      nextStatus = 'verified_by_hod';
+
+    } else if (['principal', 'vice_principal'].includes(req.user.role)) {
+      if (proposal.status !== 'verified_by_hod' && proposal.status !== 'verified') {
+        return res.status(400).json({
+          success: false,
+          message: 'Principal/VP can only verify proposals verified by HOD'
+        });
+      }
+
+      // Check if another Principal/VP has already verified (one of them wins)
+      const principalVerified = proposal.approvalSteps.some(step => ['principal', 'vice_principal'].includes(step.role) && step.decision === 'verify');
+      if (principalVerified) {
+        return res.status(400).json({
+          success: false,
+          message: 'Proposal has already been verified by Principal/VP'
+        });
+      }
+      nextStatus = 'verified_by_principal';
     }
 
-    if (proposal.status !== 'submitted') {
-      return res.status(400).json({
-        success: false,
-        message: 'Only submitted proposals can be verified'
-      });
-    }
-
-    proposal.status = 'verified';
+    proposal.status = nextStatus;
     proposal.lastModifiedBy = req.user._id;
 
     // Add verification step
@@ -643,8 +580,11 @@ const verifyBudgetProposal = async (req, res) => {
       req,
       targetEntity: 'BudgetProposal',
       targetId: id,
-      details: { remarks }
+      details: { remarks, newStatus: nextStatus }
     });
+
+    // Notify Submittor
+    await notifyProposalStatusChange(populatedProposal, 'verify', remarks);
 
     res.json({
       success: true,
@@ -654,7 +594,6 @@ const verifyBudgetProposal = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Error verifying budget proposal',
       error: error.message
     });
   }
@@ -728,6 +667,9 @@ const rejectBudgetProposal = async (req, res) => {
       targetId: id,
       details: { rejectionReason }
     });
+
+    // Notify Submittor
+    await notifyProposalStatusChange(updatedProposal, 'reject', rejectionReason);
 
     res.status(200).json({
       success: true,
@@ -811,6 +753,9 @@ const resubmitBudgetProposal = async (req, res) => {
       }
     });
 
+    // Notify HOD
+    await notifyProposalSubmission(populatedProposal);
+
     res.status(201).json({
       success: true,
       data: { proposal: populatedProposal },
@@ -846,10 +791,10 @@ const getBudgetProposalsStats = async (req, res) => {
       approvedProposals,
       rejectedProposals,
       draftProposals,
-      totalProposedAmount
+      totalApprovedAmount
     ] = await Promise.all([
       BudgetProposal.countDocuments(query),
-      BudgetProposal.countDocuments({ ...query, status: 'submitted' }),
+      BudgetProposal.countDocuments({ ...query, status: { $in: ['submitted', 'verified_by_hod', 'verified_by_principal', 'verified'] } }),
       BudgetProposal.countDocuments({ ...query, status: 'approved' }),
       BudgetProposal.countDocuments({ ...query, status: 'rejected' }),
       BudgetProposal.countDocuments({ ...query, status: 'draft' }),
@@ -959,5 +904,6 @@ module.exports = {
   approveBudgetProposal,
   rejectBudgetProposal,
   deleteBudgetProposal,
-  getBudgetProposalsStats
+  getBudgetProposalsStats,
+  markProposalAsRead
 };

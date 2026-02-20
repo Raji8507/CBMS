@@ -229,7 +229,13 @@ export const settingsAPI = {
 
 // Reports API
 export const reportAPI = {
-  getExpenditureReport: (params) => api.get('/reports/expenditures', { params }),
+  getExpenditureReport: (params) => {
+    const isCsv = params?.format === 'csv';
+    return api.get('/reports/expenditures', {
+      params,
+      ...(isCsv ? { responseType: 'blob' } : {})
+    });
+  },
   getAllocationReport: (params) => api.get('/reports/allocations', { params }),
   getDashboardReport: (params) => api.get('/reports/dashboard', { params }),
   getBudgetProposalReport: (params) => api.get('/reports/proposals', { params }),
@@ -252,6 +258,7 @@ export const budgetProposalAPI = {
   resubmitBudgetProposal: (id) => api.post(`/budget-proposals/${id}/resubmit`),
   deleteBudgetProposal: (id) => api.delete(`/budget-proposals/${id}`),
   getBudgetProposalsStats: (params) => api.get('/budget-proposals/stats', { params }),
+  markProposalAsRead: (id) => api.put(`/budget-proposals/${id}/read`),
 };
 
 // Files API
@@ -298,6 +305,30 @@ export const financialYearAPI = {
   lockYear: (id, data) => api.put(`/financial-years/${id}/lock`, data),
   closeYear: (id, data) => api.put(`/financial-years/${id}/close`, data),
   recalculateTotals: (id) => api.put(`/financial-years/${id}/recalculate`)
+};
+
+// System API
+export const systemAPI = {
+  getConcurrencyStatus: () => api.get('/system/concurrency-status'),
+  bulkSetup: (data) => api.post('/system/bulk-setup', data),
+};
+
+// AI Insights API - Intelligent Budget Analysis
+export const aiAPI = {
+  // Get all AI data for dashboard
+  getDashboard: (params) => api.get('/ai/dashboard', { params }),
+  // Anomaly detection
+  getAnomalies: (params) => api.get('/ai/anomalies', { params }),
+  // Risk scoring for departments
+  getRiskScores: (params) => api.get('/ai/risk-scores', { params }),
+  // AI-prioritized approval queue
+  getApprovalPriority: () => api.get('/ai/approval-priority'),
+  // Year-over-year comparison analysis
+  getYearComparison: (params) => api.get('/ai/year-comparison', { params }),
+  // Natural language insights
+  getInsights: (params) => api.get('/ai/insights', { params }),
+  // System health monitoring (admin only)
+  getSystemHealth: (params) => api.get('/ai/health', { params }),
 };
 
 export default api;

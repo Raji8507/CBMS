@@ -47,8 +47,8 @@ router.post('/:id/resubmit',
   resubmitExpenditure
 );
 
-// Verify expenditure (HOD, Office)
-router.put('/:id/verify', authorize('hod', 'office'), verifyExpenditure);
+// Verify expenditure (HOD, Office, Principal, Vice Principal)
+router.put('/:id/verify', authorize('hod', 'office', 'principal', 'vice_principal'), verifyExpenditure);
 
 // Approve expenditure (Office, Vice Principal, Principal)
 router.put('/:id/approve',

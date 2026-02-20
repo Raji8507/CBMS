@@ -39,7 +39,7 @@ const budgetProposalSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['draft', 'submitted', 'verified', 'approved', 'rejected', 'revised'],
+    enum: ['draft', 'submitted', 'verified_by_hod', 'verified_by_principal', 'verified', 'approved', 'rejected', 'revised'],
     default: 'draft'
   },
   approvalSteps: [{
@@ -96,7 +96,11 @@ const budgetProposalSchema = new mongoose.Schema({
   lastModifiedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
-  }
+  },
+  readBy: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }]
 }, {
   timestamps: true
 });

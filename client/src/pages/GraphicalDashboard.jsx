@@ -36,7 +36,7 @@ const GraphicalDashboard = () => {
         fetchDashboardData();
       };
       socket.on('notification', handleNotification);
-      
+
       return () => {
         if (interval) clearInterval(interval);
         socket.off('notification', handleNotification);
@@ -56,20 +56,20 @@ const GraphicalDashboard = () => {
 
       const [allocationResponse, expenditureResponse, reportResponse, comparisonReportResponse] = await Promise.all([
         allocationAPI.getAllocations({
-          departmentId: user.role === 'department' ? user.department : undefined,
+          departmentId: ['department', 'hod'].includes(user.role) ? (user.department?._id || user.department) : undefined,
           financialYear: targetFY
         }),
         expenditureAPI.getExpenditures({
           departmentId: user.role === 'department' ? user.department : undefined,
-          status: 'approved'
+          status: 'finalized'
         }),
         reportAPI.getDashboardReport({
-          departmentId: user.role === 'department' ? user.department : undefined,
+          departmentId: ['department', 'hod'].includes(user.role) ? (user.department?._id || user.department) : undefined,
           financialYear: targetFY
         }),
         // Fetch year comparison data for current year
         reportAPI.getDashboardReport({
-          departmentId: user.role === 'department' ? user.department : undefined,
+          departmentId: ['department', 'hod'].includes(user.role) ? (user.department?._id || user.department) : undefined,
           financialYear: currentFY,
           includeComparison: 'true'
         })
@@ -216,11 +216,12 @@ const GraphicalDashboard = () => {
     // Group expenditures by month
     const monthlyData = {};
     dashboardData.expenditures.forEach(exp => {
-      const month = new Date(exp.billDate).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+      const date = exp.eventDate || exp.billDate;
+      const month = new Date(date).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
       if (!monthlyData[month]) {
         monthlyData[month] = 0;
       }
-      monthlyData[month] += exp.billAmount;
+      monthlyData[month] += (exp.totalAmount || 0);
     });
 
     const sortedMonths = Object.keys(monthlyData).sort((a, b) => {
@@ -379,7 +380,7 @@ const GraphicalDashboard = () => {
     const expenditures = dashboardData.expenditures;
 
     const totalAllocated = allocations.reduce((sum, a) => sum + a.allocatedAmount, 0);
-    const totalSpent = expenditures.reduce((sum, e) => sum + e.billAmount, 0);
+    const totalSpent = expenditures.reduce((sum, e) => sum + (e.totalAmount || 0), 0);
     const totalRemaining = totalAllocated - totalSpent;
     const utilizationPercentage = totalAllocated > 0 ? (totalSpent / totalAllocated) * 100 : 0;
 
@@ -412,7 +413,7 @@ const GraphicalDashboard = () => {
   return (
     <ErrorBoundary>
       <div className="graphical-dashboard-container">
-        <PageHeader 
+        <PageHeader
           title={getDashboardTitle()}
           subtitle="Real-time budget analytics and insights"
         >

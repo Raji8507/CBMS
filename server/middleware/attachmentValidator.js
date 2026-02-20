@@ -6,10 +6,21 @@ const Settings = require('../models/Settings');
  */
 const validateAttachments = async (req, res, next) => {
     try {
-        const { billAmount, attachments } = req.body;
+        let { totalAmount, billAmount, attachments, expenseItems } = req.body;
+
+        // Handle JSON string if sent via FormData
+        if (typeof expenseItems === 'string') {
+            try {
+                expenseItems = JSON.parse(expenseItems);
+            } catch (e) {
+                // Ignore parsing errors here, controller will handle it
+            }
+        }
+
+        const amountToValidate = totalAmount || billAmount || (Array.isArray(expenseItems) ? expenseItems.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0) : 0);
 
         // Skip validation if no amount specified
-        if (!billAmount) {
+        if (!amountToValidate) {
             return next();
         }
 
@@ -20,7 +31,7 @@ const validateAttachments = async (req, res, next) => {
         const threshold = thresholdSetting ? parseFloat(thresholdSetting.value) : 10000;
         const policy = policySetting ? policySetting.value : 'warn';
 
-        const amount = parseFloat(billAmount);
+        const amount = parseFloat(amountToValidate);
 
         // Check if amount exceeds threshold
         if (amount > threshold) {
@@ -73,7 +84,7 @@ const validateAttachmentsForApproval = async (req, res, next) => {
         const threshold = thresholdSetting ? parseFloat(thresholdSetting.value) : 10000;
         const policy = policySetting ? policySetting.value : 'warn';
 
-        const amount = expenditure.billAmount;
+        const amount = expenditure.totalAmount || expenditure.billAmount;
 
         // Check if amount exceeds threshold
         if (amount > threshold) {

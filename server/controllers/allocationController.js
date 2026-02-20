@@ -756,7 +756,7 @@ const getYearComparison = async (req, res) => {
       .populate('budgetHead', 'name category');
 
     const prevExpenditures = await Expenditure.find({
-      billDate: { $gte: prevDates.startDate, $lte: prevDates.endDate }
+      eventDate: { $gte: prevDates.startDate, $lte: prevDates.endDate }
     });
 
     // Get current year data
@@ -766,13 +766,13 @@ const getYearComparison = async (req, res) => {
       .populate('budgetHead', 'name category');
 
     const currentExpenditures = await Expenditure.find({
-      billDate: { $gte: currentDates.startDate, $lte: currentDates.endDate }
+      eventDate: { $gte: currentDates.startDate, $lte: currentDates.endDate }
     });
 
     // Helper to calculate totals
     const calcTotals = (allocs, exps) => {
       const allocated = allocs.reduce((sum, a) => sum + a.allocatedAmount, 0);
-      const spent = exps.reduce((sum, e) => sum + e.billAmount, 0);
+      const spent = exps.reduce((sum, e) => sum + (e.totalAmount || 0), 0);
       const utilization = allocated > 0 ? Math.round((spent / allocated) * 100) : 0;
       return { allocated, spent, utilization };
     };

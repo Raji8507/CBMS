@@ -233,16 +233,16 @@ const getBudgetUtilizationDashboard = async (req, res) => {
     tomorrow.setDate(today.getDate() + 1);
 
     const dailyExpenditures = await Expenditure.find({
-      billDate: { $gte: today, $lt: tomorrow },
+      eventDate: { $gte: today, $lt: tomorrow },
       status: { $in: ['approved', 'finalized'] }
     }).populate('department', 'name code');
 
-    const dailyTotal = dailyExpenditures.reduce((sum, exp) => sum + exp.billAmount, 0);
+    const dailyTotal = dailyExpenditures.reduce((sum, exp) => sum + (exp.totalAmount || 0), 0);
     const dailyDepartmentWise = {};
 
     dailyExpenditures.forEach(exp => {
       const deptName = exp.department.name;
-      dailyDepartmentWise[deptName] = (dailyDepartmentWise[deptName] || 0) + exp.billAmount;
+      dailyDepartmentWise[deptName] = (dailyDepartmentWise[deptName] || 0) + (exp.totalAmount || 0);
     });
 
     // Group by utilization ranges
@@ -350,10 +350,10 @@ const getFundUtilizationTrend = async (req, res) => {
       {
         $group: {
           _id: {
-            month: { $month: '$billDate' },
-            year: { $year: '$billDate' }
+            month: { $month: '$eventDate' },
+            year: { $year: '$eventDate' }
           },
-          totalSpent: { $sum: '$amount' },
+          totalSpent: { $sum: '$totalAmount' },
           count: { $sum: 1 }
         }
       },

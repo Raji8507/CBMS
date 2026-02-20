@@ -8,320 +8,161 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.95rem;
-    font-weight: 600;
+    padding: 0.625rem 1.25rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--transition-base);
     white-space: nowrap;
-}
-
-/* Button Sizes */
-.btn-sm {
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
-}
-
-.btn-md {
-    padding: 0.75rem 1.5rem;
-    font-size: 0.95rem;
-}
-
-.btn-lg {
-    padding: 1rem 2rem;
-    font-size: 1.1rem;
+    user-select: none;
 }
 
 /* Button Variants */
 .btn-primary {
-    background-color: #3498db;
+    background-color: var(--primary);
     color: white;
-}
 
-.btn-primary:hover:not(:disabled) {
-    background-color: #2980b9;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+    &:hover:not(:disabled) {
+        background-color: var(--primary-hover);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+        transform: translateY(0);
+    }
 }
 
 .btn-secondary {
-    background-color: #95a5a6;
-    color: white;
-}
+    background-color: white;
+    color: var(--text-primary);
+    border-color: var(--border-medium);
 
-.btn-secondary:hover:not(:disabled) {
-    background-color: #7f8c8d;
+    &:hover:not(:disabled) {
+        background-color: var(--bg-tertiary);
+        border-color: var(--border-dark);
+    }
 }
 
 .btn-success {
-    background-color: #27ae60;
+    background-color: var(--success);
     color: white;
-}
 
-.btn-success:hover:not(:disabled) {
-    background-color: #229954;
+    &:hover:not(:disabled) {
+        filter: brightness(0.9);
+    }
 }
 
 .btn-danger {
-    background-color: #e74c3c;
+    background-color: var(--error);
     color: white;
+
+    &:hover:not(:disabled) {
+        filter: brightness(0.9);
+    }
 }
 
-.btn-danger:hover:not(:disabled) {
-    background-color: #c0392b;
+.btn-ghost {
+    background-color: transparent;
+    color: var(--text-secondary);
+
+    &:hover:not(:disabled) {
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
+    }
 }
 
-.btn-warning {
-    background-color: #f39c12;
-    color: white;
+/* Sizes */
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: var(--text-xs);
 }
 
-.btn-warning:hover:not(:disabled) {
-    background-color: #e67e22;
-}
-
-/* Button States */
-.btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none !important;
-}
-
-.btn-loading {
-    position: relative;
-    color: transparent;
-}
-
-.btn-spinner {
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: white;
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-}
-
-.btn-icon {
-    display: flex;
-    align-items: center;
-}
-
-.btn-text {
-    display: flex;
-    align-items: center;
+.btn-lg {
+    padding: 0.875rem 1.75rem;
+    font-size: var(--text-base);
 }
 
 /* ==================== STATUS BADGES ==================== */
 .status-badge {
     display: inline-flex;
     align-items: center;
-    padding: 0.4rem 0.8rem;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-transform: capitalize;
-    white-space: nowrap;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+    font-weight: var(--font-bold);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
 }
 
-/* Badge Variants */
-.status-primary {
-    background-color: #e3f2fd;
-    color: #1565c0;
+.status-pending {
+    background: var(--warning-light);
+    color: var(--warning);
 }
 
-.status-secondary {
-    background-color: #f5f5f5;
-    color: #616161;
+.status-approved,
+.status-verified {
+    background: var(--success-light);
+    color: var(--success);
 }
 
-.status-success {
-    background-color: #d4edda;
-    color: #155724;
-}
-
-.status-danger {
-    background-color: #f8d7da;
-    color: #721c24;
-}
-
-.status-warning {
-    background-color: #fff3cd;
-    color: #856404;
+.status-rejected {
+    background: var(--error-light);
+    color: var(--error);
 }
 
 .status-info {
-    background-color: #d1ecf1;
-    color: #0c5460;
+    background: var(--info-light);
+    color: var(--info);
 }
 
 /* ==================== ALERTS ==================== */
 .alert {
     display: flex;
     align-items: flex-start;
-    gap: 1rem;
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    border: 1px solid;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid transparent;
+    margin-bottom: var(--space-md);
 }
 
-.alert-icon {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    margin-top: 0.1rem;
-}
-
-.alert-content {
-    flex: 1;
-}
-
-.alert-title {
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-}
-
-.alert-message {
-    font-size: 0.95rem;
-    line-height: 1.5;
-}
-
-.alert-dismiss {
-    flex-shrink: 0;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 4px;
-    color: inherit;
-    opacity: 0.7;
-    transition: all 0.2s ease;
-}
-
-.alert-dismiss:hover {
-    opacity: 1;
-    background-color: rgba(0, 0, 0, 0.05);
-}
-
-/* Alert Variants */
 .alert-success {
-    background-color: #d4edda;
-    border-color: #c3e6cb;
-    color: #155724;
+    background: var(--success-light);
+    border-color: #a7f3d0;
+    color: var(--success);
 }
 
 .alert-error {
-    background-color: #f8d7da;
-    border-color: #f5c6cb;
-    color: #721c24;
+    background: var(--error-light);
+    border-color: #fecaca;
+    color: var(--error);
 }
 
 .alert-warning {
-    background-color: #fff3cd;
-    border-color: #ffeaa7;
-    color: #856404;
+    background: var(--warning-light);
+    border-color: #fde68a;
+    color: var(--warning);
 }
 
 .alert-info {
-    background-color: #d1ecf1;
-    border-color: #bee5eb;
-    color: #0c5460;
+    background: var(--info-light);
+    border-color: #a5f3fc;
+    color: var(--info);
 }
 
 /* ==================== LOADING SPINNER ==================== */
-.spinner-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    padding: 2rem;
-}
-
 .spinner {
+    border: 2px solid var(--border-medium);
+    border-top-color: var(--primary);
     border-radius: 50%;
-    border-style: solid;
     animation: spin 0.8s linear infinite;
 }
 
-/* Spinner Sizes */
-.spinner-sm {
-    width: 20px;
-    height: 20px;
-    border-width: 2px;
-}
-
-.spinner-md {
-    width: 40px;
-    height: 40px;
-    border-width: 3px;
-}
-
-.spinner-lg {
-    width: 60px;
-    height: 60px;
-    border-width: 4px;
-}
-
-/* Spinner Variants */
-.spinner-primary {
-    border-color: rgba(52, 152, 219, 0.2);
-    border-top-color: #3498db;
-}
-
-.spinner-secondary {
-    border-color: rgba(149, 165, 166, 0.2);
-    border-top-color: #95a5a6;
-}
-
-.spinner-white {
-    border-color: rgba(255, 255, 255, 0.2);
-    border-top-color: white;
-}
-
-.spinner-message {
-    font-size: 0.95rem;
-    color: #7f8c8d;
-    text-align: center;
-}
-
-.spinner-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(255, 255, 255, 0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-}
-
-/* ==================== ANIMATIONS ==================== */
 @keyframes spin {
     to {
         transform: rotate(360deg);
     }
-}
-
-/* ==================== UTILITY CLASSES ==================== */
-.mr-2 {
-    margin-right: 0.5rem;
-}
-
-.mb-4 {
-    margin-bottom: 1rem;
-}
-
-.loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(52, 152, 219, 0.2);
-    border-top-color: #3498db;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
 }

@@ -1,9 +1,8 @@
+@import '../styles/layout-utils';
+
 /* Consolidated Dashboard - Premium Glass Theme */
 .consolidated-dashboard-container {
-  padding: 10px;
-  max-width: 1400px;
-  margin: 0 auto;
-  animation: slideUpFade 0.5s ease-out;
+  @extend .page-container;
 }
 
 .dashboard-header {
@@ -47,10 +46,7 @@
 
 /* Overview Stats */
 .overview-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2.5rem;
+  @extend .stats-grid;
 }
 
 .stat-card {
@@ -114,10 +110,7 @@
 
 /* Dashboard Grid */
 .dashboard-content {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 2rem;
-  margin-bottom: 2rem;
+  @extend .charts-grid;
 }
 
 .section-header h2 {

@@ -11,6 +11,9 @@ import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 
 import HODDashboard from './pages/HODDashboard';
+import HODAnalytics from './pages/HODAnalytics';
+import HODHistory from './pages/HODHistory';
+import OfficeDashboard from './pages/OfficeDashboard';
 import ConsolidatedDashboard from './pages/ConsolidatedDashboard';
 import GraphicalDashboard from './pages/GraphicalDashboard';
 
@@ -67,6 +70,10 @@ const DashboardWrapper = () => {
 
   if (user.role === 'hod') {
     return <HODDashboard />;
+  }
+
+  if (user.role === 'office') {
+    return <OfficeDashboard />;
   }
 
   return <Dashboard />;
@@ -128,7 +135,8 @@ function App() {
                 <Route path="resubmit-expenditure/:id" element={<ResubmitExpenditure />} />
 
                 {/* HOD Routes */}
-                <Route path="department-expenditures" element={<HODDashboard />} />
+                <Route path="hod-analytics" element={<HODAnalytics />} />
+                <Route path="hod-history" element={<HODHistory />} />
                 <Route path="department-users" element={<DepartmentUsers />} />
 
                 {/* Management Routes */}

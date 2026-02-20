@@ -1,42 +1,35 @@
 import React from 'react';
+import '../../styles/common-components.scss';
 
-/**
- * Reusable Button Component
- * 
- * @param {string} variant - primary | secondary | danger | success | warning
- * @param {string} size - sm | md | lg
- * @param {boolean} disabled - Whether button is disabled
- * @param {boolean} loading - Shows loading state
- * @param {React.ReactNode} icon - Icon component to display
- * @param {React.ReactNode} children - Button text/content
- * @param {function} onClick - Click handler
- * @param {string} type - button | submit | reset
- */
 const Button = ({
+    children,
     variant = 'primary',
     size = 'md',
-    disabled = false,
     loading = false,
-    icon,
-    children,
+    disabled = false,
     onClick,
     type = 'button',
+    fullWidth = false,
+    icon: Icon,
     className = '',
     ...props
 }) => {
-    const buttonClass = `btn btn-${variant} btn-${size} ${loading ? 'btn-loading' : ''} ${className}`.trim();
-
     return (
         <button
             type={type}
-            className={buttonClass}
-            onClick={onClick}
+            className={`btn btn-${variant} btn-${size} ${fullWidth ? 'btn-full' : ''} ${loading ? 'btn-loading' : ''} ${className}`}
             disabled={disabled || loading}
+            onClick={onClick}
             {...props}
         >
-            {loading && <span className="btn-spinner"></span>}
-            {!loading && icon && <span className="btn-icon">{icon}</span>}
-            {children && <span className="btn-text">{children}</span>}
+            {loading ? (
+                <span className="spinner" style={{ width: '16px', height: '16px' }}></span>
+            ) : (
+                <>
+                    {Icon && <Icon size={size === 'sm' ? 14 : 18} />}
+                    {children}
+                </>
+            )}
         </button>
     );
 };

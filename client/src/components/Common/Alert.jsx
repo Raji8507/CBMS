@@ -1,16 +1,7 @@
 import React from 'react';
 import { AlertCircle, CheckCircle, Info, AlertTriangle, X } from 'lucide-react';
+import '../../styles/common-components.scss';
 
-/**
- * Reusable Alert Component
- * 
- * @param {string} variant - success | error | warning | info
- * @param {string} title - Alert title
- * @param {string} message - Alert message
- * @param {boolean} dismissible - Can be dismissed
- * @param {function} onDismiss - Dismiss handler
- * @param {React.ReactNode} children - Custom content
- */
 const Alert = ({
     variant = 'info',
     title,
@@ -28,7 +19,7 @@ const Alert = ({
     };
 
     return (
-        <div className={`alert alert-${variant} ${className}`.trim()}>
+        <div className={`alert alert-${variant} ${className}`}>
             <div className="alert-icon">{icons[variant]}</div>
             <div className="alert-content">
                 {title && <div className="alert-title">{title}</div>}

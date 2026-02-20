@@ -1,12 +1,8 @@
+@import '../styles/layout-utils';
+
 /* Graphical Dashboard - Premium Glass Theme */
 .graphical-dashboard-container {
-  padding: 10px;
-  max-width: 1600px;
-  margin: 0 auto;
-  min-height: 100vh;
-  /* Background handled by Layout global */
-  background: transparent;
-  animation: slideUpFade 0.5s ease-out;
+  @extend .page-container;
 }
 
 
@@ -49,10 +45,7 @@
 
 /* Metrics Grid */
 .metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  @extend .stats-grid;
 }
 
 .metric-card {
@@ -90,10 +83,7 @@
 
 /* Charts Grid */
 .charts-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 2rem;
-  margin-bottom: 2rem;
+  @extend .charts-grid;
 }
 
 /* Fix for odd card counts: span the last item full-width */

@@ -1,9 +1,8 @@
+@import '../styles/layout-utils';
 /* Dashboard.css - Admin Dashboard Design */
 
 .dashboard-container {
-  padding: 1.5rem;
-  max-width: 1400px;
-  margin: 0 auto;
+  @extend .page-container;
 }
 
 .dashboard-filters {
@@ -13,10 +12,35 @@
 
 /* Statistics Grid - Top Row */
 .stats-grid {
+  @extend .stats-grid;
+}
+
+.stats-grid-5 {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1.5rem;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1.25rem;
   margin-bottom: 2rem;
+
+  @media (max-width: 1400px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.metric-card.is-pending {
+  border-left: 4px solid var(--warning);
+  background: var(--warning-light);
+
+  .metric-value {
+    color: var(--warning);
+  }
 }
 
 /* Metric Card Styles */
@@ -161,10 +185,7 @@
 
 /* Charts Section - Middle Row */
 .charts-section {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  @extend .charts-grid;
 }
 
 .chart-card {
@@ -302,5 +323,30 @@
   .activity-table {
     display: block;
     overflow-x: auto;
+  }
+}
+
+/* AI Insights Section */
+.ai-section {
+  margin-top: 3rem;
+  width: 100%;
+}
+
+.no-data-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--text-secondary);
+  gap: 0.75rem;
+
+  svg {
+    opacity: 0.5;
+  }
+
+  p {
+    font-size: 0.9rem;
+    margin: 0;
   }
 }

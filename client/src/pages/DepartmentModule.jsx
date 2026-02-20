@@ -6,7 +6,8 @@ import {
     expenditureAPI,
     authAPI,
     departmentsAPI,
-    usersAPI
+    usersAPI,
+    reportAPI
 } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -158,6 +159,30 @@ export const DepartmentDashboard = () => {
             month: 'short',
             day: 'numeric'
         });
+    };
+
+    const handleDownloadReport = async () => {
+        try {
+            setRefreshing(true);
+            const response = await reportAPI.getExpenditureReport({
+                department: user.department?._id || user.department,
+                format: 'csv'
+            });
+
+            // Create blob and download
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Expenditure_Report_${user.department?.name || 'Department'}_${new Date().toLocaleDateString()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (err) {
+            console.error('Error downloading report:', err);
+            setError('Failed to download report. Please try again.');
+        } finally {
+            setRefreshing(false);
+        }
     };
 
     if (loading) {
@@ -339,9 +364,13 @@ export const DepartmentDashboard = () => {
                                 <List size={18} />
                                 View All Expenditures
                             </button>
-                            <button className="btn btn-secondary">
+                            <button
+                                className="btn btn-secondary"
+                                onClick={handleDownloadReport}
+                                disabled={refreshing}
+                            >
                                 <Download size={18} />
-                                Download Report
+                                {refreshing ? 'Generating...' : 'Download Report'}
                             </button>
                         </div>
                     </div>

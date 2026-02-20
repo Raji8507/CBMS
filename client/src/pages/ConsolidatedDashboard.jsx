@@ -18,14 +18,14 @@ const ConsolidatedDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedDepartment, setSelectedDepartment] = useState('');
-  
+
   const currentFY = getCurrentFinancialYear();
   const previousFY = getPreviousFinancialYear();
   // Simple logic to get a year before previous for the dropdown
   const getFYMinus2 = () => {
-      const [start] = previousFY.split('-');
-      const year = parseInt(start) - 1;
-      return `${year}-${year + 1}`;
+    const [start] = previousFY.split('-');
+    const year = parseInt(start) - 1;
+    return `${year}-${year + 1}`;
   };
   const fyMinus2 = getFYMinus2();
 
@@ -124,8 +124,12 @@ const ConsolidatedDashboard = () => {
 
   // Calculate department-wise statistics
   const departmentStats = departments.map(dept => {
-    const deptAllocations = allocations.filter(allocation => allocation.departmentId === dept._id);
-    const deptExpenditures = expenditures.filter(expenditure => expenditure.departmentId === dept._id);
+    const deptAllocations = allocations.filter(allocation =>
+      (allocation.department?._id || allocation.department) === dept._id
+    );
+    const deptExpenditures = expenditures.filter(expenditure =>
+      (expenditure.department?._id || expenditure.department) === dept._id
+    );
 
     const totalAllocated = deptAllocations.reduce((sum, allocation) => sum + allocation.allocatedAmount, 0);
     const totalSpent = deptAllocations.reduce((sum, allocation) => sum + allocation.spentAmount, 0);
@@ -406,10 +410,10 @@ const ConsolidatedDashboard = () => {
                 </div>
                 <div className="activity-content">
                   <div className="activity-title">
-                    {expenditure.billNumber} - {expenditure.departmentName}
+                    {expenditure.billNumber} - {expenditure.department?.name || expenditure.departmentName || 'N/A'}
                   </div>
                   <div className="activity-details">
-                    {expenditure.budgetHeadName} • {expenditure.partyName}
+                    {expenditure.budgetHead?.name || expenditure.budgetHeadName || 'N/A'} • {expenditure.partyName}
                   </div>
                   <div className="activity-meta">
                     <span className="amount">{formatCurrency(expenditure.billAmount)}</span>

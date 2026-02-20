@@ -793,6 +793,7 @@ export const BudgetProposalForm = () => {
     const [formData, setFormData] = useState({
         financialYear: '2025-2026',
         department: user?.department?._id || user?.department || '',
+        status: '',
         proposalItems: [{
             budgetHead: '',
             proposedAmount: '',
@@ -954,6 +955,7 @@ export const BudgetProposalForm = () => {
                     setFormData({
                         financialYear: proposal.financialYear,
                         department: proposal.department._id,
+                        status: proposal.status,
                         proposalItems: items,
                         notes: proposal.notes || ''
                     });
@@ -964,6 +966,15 @@ export const BudgetProposalForm = () => {
                             fetchBudgetStats(item.budgetHead, proposal.department._id, index);
                         }
                     });
+
+                    // Mark as read if user is principal, office, or admin
+                    if (['admin', 'office', 'principal', 'vice_principal'].includes(user.role)) {
+                        try {
+                            await budgetProposalAPI.markProposalAsRead(id);
+                        } catch (readErr) {
+                            console.error('Error marking proposal as read:', readErr);
+                        }
+                    }
                 } catch (err) {
                     setError('Failed to fetch proposal');
                     console.error('Error fetching proposal:', err);
@@ -973,7 +984,7 @@ export const BudgetProposalForm = () => {
             };
             fetchProposal();
         }
-    }, [id, isEditMode, fetchBudgetStats]);
+    }, [id, isEditMode, fetchBudgetStats, user.role]);
 
     const fetchBudgetHeads = async (departmentId) => {
         try {
@@ -1008,7 +1019,7 @@ export const BudgetProposalForm = () => {
             const currentMonth = today.getMonth() + 1;
             const currentYear = today.getFullYear();
             const actualCurrentFY = currentMonth >= 4 ? `${currentYear}-${currentYear + 1}` : `${currentYear - 1}-${currentYear}`;
-            
+
             const proposalFY = formData.financialYear;
             const [proposalStart] = proposalFY.split('-');
             const prevYearStart = (parseInt(proposalStart) - 2);
@@ -1419,15 +1430,15 @@ export const BudgetProposalForm = () => {
                                                     placeholder="0"
                                                     min="0"
                                                     step="0.01"
-                                                    disabled={['hod', 'officer', 'vp', 'p'].includes(user?.role)}
+                                                    disabled={['hod', 'office', 'vice_principal', 'principal'].includes(user?.role)}
                                                     style={{
                                                         height: '32px',
                                                         padding: '4px 8px',
                                                         width: '120px',
                                                         border: '1px solid var(--border-color)',
                                                         borderRadius: '4px',
-                                                        opacity: ['hod', 'officer', 'vp', 'p'].includes(user?.role) ? 0.6 : 1,
-                                                        cursor: ['hod', 'officer', 'vp', 'p'].includes(user?.role) ? 'not-allowed' : 'auto'
+                                                        opacity: ['hod', 'office', 'vice_principal', 'principal'].includes(user?.role) ? 0.6 : 1,
+                                                        cursor: ['hod', 'office', 'vice_principal', 'principal'].includes(user?.role) ? 'not-allowed' : 'auto'
                                                     }}
                                                 />
                                             </div>
@@ -1444,8 +1455,8 @@ export const BudgetProposalForm = () => {
                                     placeholder="Explain why this budget is needed"
                                     rows="3"
                                     required
-                                    disabled={isEditMode && ['hod', 'officer', 'vp', 'p'].includes(user?.role)}
-                                    style={isEditMode && ['hod', 'officer', 'vp', 'p'].includes(user?.role) ? { opacity: 0.6 } : {}}
+                                    disabled={isEditMode && ['hod', 'office', 'vice_principal', 'principal'].includes(user?.role)}
+                                    style={isEditMode && ['hod', 'office', 'vice_principal', 'principal'].includes(user?.role) ? { opacity: 0.6 } : {}}
                                 />
                             </div>
                         </div>
@@ -1472,7 +1483,7 @@ export const BudgetProposalForm = () => {
                     >
                         <Save size={18} /> {loading ? 'Saving...' : isEditMode ? 'Update Draft' : 'Save as Draft'}
                     </button>
-                    {['hod', 'officer', 'vp', 'p'].includes(user?.role) && isEditMode && (
+                    {['hod', 'office', 'vice_principal', 'principal'].includes(user?.role) && isEditMode && (
                         <button
                             type="button"
                             className="btn btn-info"
@@ -1482,6 +1493,57 @@ export const BudgetProposalForm = () => {
                         >
                             {loadingStats ? 'Loading...' : 'View All Departments Stats'}
                         </button>
+                    )}
+
+                    {/* Quick Approve/Verify buttons in Form */}
+                    {isEditMode && (
+                        <>
+                            {user?.role === 'hod' && formData.status === 'submitted' && (
+                                <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    onClick={async () => {
+                                        if (window.confirm('Are you sure you want to verify this proposal?')) {
+                                            await budgetProposalAPI.verifyBudgetProposal(id, { remarks: 'Verified from detail view' });
+                                            navigate('/budget-proposals');
+                                        }
+                                    }}
+                                    style={{ color: 'white' }}
+                                >
+                                    <ShieldCheck size={18} /> Verify Proposal
+                                </button>
+                            )}
+                            {['principal', 'vice_principal'].includes(user?.role) && formData.status === 'verified' && (
+                                <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    onClick={async () => {
+                                        if (window.confirm('Are you sure you want to verify and accept this proposal?')) {
+                                            await budgetProposalAPI.verifyBudgetProposal(id, { remarks: 'Verified & Accepted from detail view' });
+                                            navigate('/budget-proposals');
+                                        }
+                                    }}
+                                    style={{ color: 'white' }}
+                                >
+                                    <ShieldCheck size={18} /> Verify & Accept
+                                </button>
+                            )}
+                            {user?.role === 'office' && formData.status === 'verified' && (
+                                <button
+                                    type="button"
+                                    className="btn btn-success"
+                                    onClick={async () => {
+                                        if (window.confirm('Are you sure you want to allocate and approve this proposal?')) {
+                                            await budgetProposalAPI.approveBudgetProposal(id, { notes: 'Approved from detail view' });
+                                            navigate('/budget-proposals');
+                                        }
+                                    }}
+                                    style={{ color: 'white' }}
+                                >
+                                    <Check size={18} /> Allocate & Approve
+                                </button>
+                            )}
+                        </>
                     )}
                     <button
                         type="button"
@@ -1548,7 +1610,7 @@ export const BudgetProposalForm = () => {
                                         <h4 style={{ marginBottom: '1rem', color: 'var(--primary)' }}>
                                             {deptStat.departmentName} ({deptStat.departmentCode})
                                         </h4>
-                                        
+
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
                                                 <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Prev. Year Allocated Amount</span>
@@ -1652,7 +1714,7 @@ export const BudgetProposalReport = () => {
             const currentMonth = today.getMonth() + 1;
             const currentYear = today.getFullYear();
             const actualCurrentFY = currentMonth >= 4 ? `${currentYear}-${currentYear + 1}` : `${currentYear - 1}-${currentYear}`;
-            
+
             const proposalFY = proposal.financialYear;
             const [proposalStart] = proposalFY.split('-');
             const prevYearStart = (parseInt(proposalStart) - 2);
@@ -2007,8 +2069,8 @@ export const BudgetProposalReport = () => {
                                 </div>
                             </div>
 
-                            <div style={{ 
-                                padding: '1rem', 
+                            <div style={{
+                                padding: '1rem',
                                 background: 'rgba(var(--info-rgb), 0.05)',
                                 border: '1px solid var(--border-color)',
                                 borderRadius: '8px',
@@ -2159,7 +2221,8 @@ export const BudgetProposals = () => {
     const [rejectionReason, setRejectionReason] = useState('');
 
     const handleApproveProposal = async (id) => {
-        if (!window.confirm('Are you sure you want to approve this budget proposal?')) {
+        const actionLabel = user?.role === 'office' ? 'Allocate & Approve' : 'Approve';
+        if (!window.confirm(`Are you sure you want to ${actionLabel.toLowerCase()} this budget proposal?`)) {
             return;
         }
 
@@ -2430,7 +2493,11 @@ export const BudgetProposals = () => {
                                             {proposal.status === 'submitted' && user?.role === 'hod' && (
                                                 <Tooltip text="Verify Proposal" position="top">
                                                     <button
-                                                        onClick={() => budgetProposalAPI.verifyBudgetProposal(proposal._id, { remarks: 'Verified by HOD' }).then(() => fetchProposals())}
+                                                        onClick={() => {
+                                                            if (window.confirm('Are you sure you want to verify this proposal? We recommend viewing details first.')) {
+                                                                budgetProposalAPI.verifyBudgetProposal(proposal._id, { remarks: 'Verified by HOD' }).then(() => fetchProposals());
+                                                            }
+                                                        }}
                                                         className="btn btn-sm btn-primary"
                                                         style={{ color: 'white' }}
                                                     >
@@ -2440,27 +2507,49 @@ export const BudgetProposals = () => {
                                             )}
                                             {(proposal.status === 'submitted' || proposal.status === 'verified') && ['admin', 'office', 'principal', 'vice_principal'].includes(user?.role) && (
                                                 <>
-                                                    {user?.role === 'office' && proposal.status === 'submitted' && (
-                                                        <Tooltip text="Verify" position="top">
+                                                    {/* Principal/Vice Principal Verification */}
+                                                    {['principal', 'vice_principal'].includes(user?.role) && proposal.status === 'verified' && !proposal.approvalSteps?.some(s => ['principal', 'vice_principal'].includes(s.role)) && (
+                                                        <Tooltip text="Verify & Accept" position="top">
                                                             <button
-                                                                onClick={() => budgetProposalAPI.verifyBudgetProposal(proposal._id, { remarks: 'Verified from list view' }).then(() => fetchProposals())}
+                                                                onClick={() => {
+                                                                    if (window.confirm('Are you sure you want to verify and accept this proposal? We recommend viewing details first.')) {
+                                                                        budgetProposalAPI.verifyBudgetProposal(proposal._id, { remarks: 'Verified & Accepted by Principal/VP' }).then(() => fetchProposals());
+                                                                    }
+                                                                }}
                                                                 className="btn btn-sm btn-primary"
+                                                                style={{ color: 'white' }}
+                                                            >
+                                                                <ShieldCheck size={16} />
+                                                            </button>
+                                                        </Tooltip>
+                                                    )}
+
+                                                    {/* Office or Principal Final Approval/Allocation */}
+                                                    {['office', 'principal', 'vice_principal'].includes(user?.role) && proposal.status === 'verified' && (
+                                                        <Tooltip text={user?.role === 'office' ? "Allocate & Approve" : "Approve & Accept"} position="top">
+                                                            <button
+                                                                onClick={() => handleApproveProposal(proposal._id)}
+                                                                className="btn btn-sm btn-success"
                                                                 style={{ color: 'white' }}
                                                             >
                                                                 <Check size={16} />
                                                             </button>
                                                         </Tooltip>
                                                     )}
-                                                    <Tooltip text="Approve" position="top">
-                                                        <button
-                                                            onClick={() => handleApproveProposal(proposal._id)}
-                                                            className="btn btn-sm btn-success"
-                                                            style={{ color: 'white' }}
-                                                            disabled={proposal.status === 'submitted' && user?.role === 'office'} // Office verifies before approving
-                                                        >
-                                                            <Check size={16} />
-                                                        </button>
-                                                    </Tooltip>
+
+                                                    {/* Admin can do everything */}
+                                                    {user?.role === 'admin' && (
+                                                        <Tooltip text="Approve (Admin)" position="top">
+                                                            <button
+                                                                onClick={() => handleApproveProposal(proposal._id)}
+                                                                className="btn btn-sm btn-success"
+                                                                style={{ color: 'white' }}
+                                                            >
+                                                                <Check size={16} />
+                                                            </button>
+                                                        </Tooltip>
+                                                    )}
+
                                                     <Tooltip text="Reject" position="top">
                                                         <button
                                                             onClick={() => handleRejectClick(proposal._id)}

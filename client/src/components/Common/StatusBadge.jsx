@@ -1,61 +1,27 @@
 import React from 'react';
+import '../../styles/common-components.scss';
 
-/**
- * Reusable Status Badge Component
- * 
- * @param {string} status - Status value (lowercase with underscores)
- * @param {string} label - Display label (optional, defaults to formatted status)
- * @param {string} variant - Color variant override
- */
-const StatusBadge = ({ status, label, variant, className = '' }) => {
-    const getVariantClass = () => {
-        if (variant) return `status-${variant}`;
-
-        // Map common status patterns to variants
-        const statusMap = {
-            // Expenditure statuses
-            'pending': 'warning',
-            'verified': 'info',
-            'approved': 'success',
-            'rejected': 'danger',
-            'finalized': 'success',
-
-            // Proposal statuses
-            'draft': 'secondary',
-            'submitted': 'info',
-
-            // Income statuses
-            'expected': 'info',
-            'received': 'warning',
-
-            // Financial Year statuses
-            'planning': 'info',
-            'active': 'success',
-            'locked': 'warning',
-            'closed': 'danger',
-
-            // Allocation statuses
-            'active': 'success',
-            'amended': 'warning',
-            'superseded': 'secondary'
-        };
-
-        return `status-${statusMap[status] || 'secondary'}`;
+const StatusBadge = ({ status, className = '' }) => {
+    const statusMap = {
+        'draft': { label: 'Draft', class: 'pending' },
+        'submitted': { label: 'Submitted', class: 'pending' },
+        'pending': { label: 'Pending', class: 'pending' },
+        'verified_by_hod': { label: 'Verified (HOD)', class: 'info' },
+        'verified_by_principal': { label: 'Verified (Principal)', class: 'verified' },
+        'verified': { label: 'Verified', class: 'info' },
+        'approved': { label: 'Sanctioned', class: 'approved' },
+        'finalized': { label: 'Sanctioned & Deducted', class: 'approved' },
+        'rejected': { label: 'Rejected', class: 'rejected' },
+        'pending_approval': { label: 'Pending Approval', class: 'warning' }
     };
 
-    const formatLabel = () => {
-        if (label) return label;
-
-        // Convert snake_case to Title Case
-        return status
-            .split('_')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
-    };
+    // Normalize: handle cases where status might be uppercase or slightly different? usually lowercase from backend
+    const normalizedKey = status?.toLowerCase();
+    const config = statusMap[normalizedKey] || { label: status || 'Unknown', class: 'neutral' };
 
     return (
-        <span className={`status-badge ${getVariantClass()} ${className}`.trim()}>
-            {formatLabel()}
+        <span className={`status-badge status-${config.class} ${className}`}>
+            {config.label}
         </span>
     );
 };

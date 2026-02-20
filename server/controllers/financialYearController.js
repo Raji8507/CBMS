@@ -515,7 +515,7 @@ const getYearSummary = async (req, res) => {
                 $group: {
                     _id: '$status',
                     count: { $sum: 1 },
-                    totalAmount: { $sum: '$billAmount' }
+                    totalAmount: { $sum: '$totalAmount' }
                 }
             }
         ]);

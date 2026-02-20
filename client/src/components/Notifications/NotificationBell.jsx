@@ -121,7 +121,10 @@ const NotificationBell = () => {
       budget_allocation_created: <DollarSign />,
       budget_exhaustion_warning: <AlertTriangle />,
       approval_reminder: <Clock />,
-      system_announcement: <Megaphone />
+      system_announcement: <Megaphone />,
+      proposal_submitted: <FileText />,
+      proposal_verified: <CheckCircle />,
+      proposal_rejected: <XCircle />
     };
     return icons[type] || <FileText />;
   };

@@ -23,7 +23,8 @@ import {
   TrendingUp,
   Layers,
   BarChart3,
-  Gauge
+  Gauge,
+  History as HistoryIcon
 } from 'lucide-react';
 import './Sidebar.scss';
 
@@ -50,13 +51,13 @@ const Sidebar = ({ isOpen, onClose, isExpanded, onToggleExpand }) => {
           ...baseItems,
           { path: '/users', label: 'Users', icon: <Users size={20} /> },
           { path: '/departments', label: 'Departments', icon: <Building2 size={20} /> },
-          { path: '/categories', label: 'Categories', icon: <Layers size={20} /> },
-          { path: '/budget-heads', label: 'Budget Heads', icon: <Wallet size={20} /> },
           { path: '/settings', label: 'Settings', icon: <Settings size={20} /> },
         ];
       case 'office':
         return [
           ...baseItems,
+          { path: '/budget-heads', label: 'Budget Heads', icon: <Wallet size={20} /> },
+          { path: '/categories', label: 'Categories', icon: <Layers size={20} /> },
           { path: '/allocations', label: 'Allocations', icon: <ClipboardList size={20} /> },
           { path: '/approvals', label: 'Approvals', icon: <CheckSquare size={20} /> },
           { path: '/consolidated-budget-report', label: 'Budget Report', icon: <BarChart3 size={20} /> },
@@ -75,10 +76,9 @@ const Sidebar = ({ isOpen, onClose, isExpanded, onToggleExpand }) => {
         ];
       case 'hod':
         return [
-          ...baseItems,
-          { path: '/budget-proposals', label: 'Budget Proposals', icon: <FileText size={20} /> },
-          { path: '/department-expenditures', label: 'Department Expenditures', icon: <Files size={20} /> },
-          { path: '/approvals', label: 'Approvals', icon: <CheckSquare size={20} /> },
+          { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+          { path: '/hod-analytics', label: 'Analytics', icon: <LineChart size={20} /> },
+          { path: '/hod-history', label: 'History', icon: <HistoryIcon size={20} /> },
         ];
       case 'vice_principal':
       case 'principal':
