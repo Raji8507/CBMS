@@ -34,8 +34,8 @@ const OfficeDashboard = () => {
             setLoading(true);
             const currentYear = '2025-2026'; // Should ideally be dynamic
             const [proposalsRes, expendituresRes, statsRes] = await Promise.all([
-                budgetProposalAPI.getBudgetProposals({ status: 'verified_by_principal' }),
-                expenditureAPI.getExpenditures({ status: 'approved' }), // Management approved, waiting for Office sanction
+                budgetProposalAPI.getBudgetProposals({ status: 'MANAGEMENT_APPROVED' }),
+                expenditureAPI.getExpenditures({ status: 'MANAGEMENT_APPROVED' }), // Management approved, waiting for Office sanction
                 budgetProposalAPI.getBudgetProposalsStats({ financialYear: currentYear })
             ]);
 

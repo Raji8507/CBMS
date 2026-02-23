@@ -129,18 +129,19 @@ export const DepartmentDashboard = () => {
     };
 
     const getUtilizationColor = (percentage) => {
-        if (percentage >= 90) return '#dc3545';
-        if (percentage >= 75) return '#ffc107';
-        if (percentage >= 50) return '#17a2b8';
-        return '#28a745';
+        if (percentage >= 90) return '#dc3545'; // Red (Risk)
+        if (percentage >= 75) return '#ffc107'; // Yellow (Warning)
+        return '#28a745'; // Green (Safe)
     };
 
     const getStatusColor = (status) => {
         const colors = {
-            pending: '#ffc107',
-            approved: '#28a745',
-            rejected: '#dc3545',
-            verified: '#17a2b8'
+            'PENDING': '#ff9800',
+            'HOD_VERIFIED': '#17a2b8',
+            'MANAGEMENT_APPROVED': '#6f42c1',
+            'ALLOCATED': '#28a745',
+            'FINALIZED': '#28a745',
+            'REJECTED': '#dc3545'
         };
         return colors[status] || '#6c757d';
     };
@@ -246,7 +247,7 @@ export const DepartmentDashboard = () => {
                         </div>
                         <div className="stat-info">
                             <div className="stat-number">{formatCurrency(stats.summary.totalAllocated)}</div>
-                            <div className="stat-label">Total Allocated</div>
+                            <div className="stat-label">Department Allocated Budget</div>
                         </div>
                     </div>
                     <div className="card-standard stat-card">
@@ -255,7 +256,7 @@ export const DepartmentDashboard = () => {
                         </div>
                         <div className="stat-info">
                             <div className="stat-number">{formatCurrency(stats.summary.totalSpent)}</div>
-                            <div className="stat-label">Total Spent</div>
+                            <div className="stat-label">Finalized Expenditure</div>
                         </div>
                     </div>
                     <div className="card-standard stat-card">
@@ -265,6 +266,24 @@ export const DepartmentDashboard = () => {
                         <div className="stat-info">
                             <div className="stat-number">{formatCurrency(stats.summary.totalRemaining)}</div>
                             <div className="stat-label">Remaining Budget</div>
+                        </div>
+                    </div>
+                    <div className="card-standard stat-card">
+                        <div className="stat-icon" style={{ backgroundColor: '#ffc107', color: 'white' }}>
+                            <Calendar size={20} />
+                        </div>
+                        <div className="stat-info">
+                            <div className="stat-number">{formatCurrency(stats.summary?.pendingAmount || 0)}</div>
+                            <div className="stat-label">Pending Commitment</div>
+                        </div>
+                    </div>
+                    <div className="card-standard stat-card">
+                        <div className="stat-icon" style={{ backgroundColor: '#dc3545', color: 'white' }}>
+                            <AlertCircle size={20} />
+                        </div>
+                        <div className="stat-info">
+                            <div className="stat-number">{stats.summary?.rejectedCount || 0}</div>
+                            <div className="stat-label">Rejected Entries</div>
                         </div>
                     </div>
                     <div className="card-standard stat-card">
@@ -293,6 +312,7 @@ export const DepartmentDashboard = () => {
                                     <th>Allocated</th>
                                     <th>Spent</th>
                                     <th>Remaining</th>
+                                    <th>Last Transaction</th>
                                     <th>Utilization</th>
                                     <th>Status</th>
                                 </tr>
@@ -311,6 +331,9 @@ export const DepartmentDashboard = () => {
                                             <td data-label="Allocated" className="amount">{formatCurrency(allocation.allocatedAmount)}</td>
                                             <td data-label="Spent" className="amount spent">{formatCurrency(allocation.spentAmount)}</td>
                                             <td data-label="Remaining" className="amount remaining">{formatCurrency(allocation.remainingAmount)}</td>
+                                            <td data-label="Last Transaction">
+                                                {allocation.lastTransactionDate ? formatDate(allocation.lastTransactionDate) : 'No transactions'}
+                                            </td>
                                             <td data-label="Utilization">
                                                 <div className="utilization-cell">
                                                     <div className="utilization-bar-small">
@@ -403,7 +426,7 @@ export const DepartmentDashboard = () => {
                                             className="status-badge"
                                             style={{ backgroundColor: getStatusColor(expenditure.status), color: 'white' }}
                                         >
-                                            {expenditure.status.charAt(0).toUpperCase() + expenditure.status.slice(1)}
+                                            {expenditure.status.replace(/_/g, ' ')}
                                         </span>
                                     </div>
                                 </div>
@@ -478,14 +501,17 @@ export const DepartmentDetail = () => {
     };
 
     const getStatusBadgeClass = (status) => {
-        switch (status) {
-            case 'approved':
+        const s = status?.toUpperCase();
+        switch (s) {
+            case 'ALLOCATED':
+            case 'FINALIZED':
                 return 'status-approved';
-            case 'verified':
+            case 'HOD_VERIFIED':
+            case 'MANAGEMENT_APPROVED':
                 return 'status-verified';
-            case 'pending':
+            case 'PENDING':
                 return 'status-pending';
-            case 'rejected':
+            case 'REJECTED':
                 return 'status-rejected';
             default:
                 return '';

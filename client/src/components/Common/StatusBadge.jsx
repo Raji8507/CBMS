@@ -3,20 +3,17 @@ import '../../styles/common-components.scss';
 
 const StatusBadge = ({ status, className = '' }) => {
     const statusMap = {
-        'draft': { label: 'Draft', class: 'pending' },
-        'submitted': { label: 'Submitted', class: 'pending' },
-        'pending': { label: 'Pending', class: 'pending' },
-        'verified_by_hod': { label: 'Verified (HOD)', class: 'info' },
-        'verified_by_principal': { label: 'Verified (Principal)', class: 'verified' },
-        'verified': { label: 'Verified', class: 'info' },
-        'approved': { label: 'Sanctioned', class: 'approved' },
-        'finalized': { label: 'Sanctioned & Deducted', class: 'approved' },
-        'rejected': { label: 'Rejected', class: 'rejected' },
-        'pending_approval': { label: 'Pending Approval', class: 'warning' }
+        'DRAFT': { label: 'Draft', class: 'pending' },
+        'PENDING': { label: 'Pending Approval', class: 'pending' },
+        'HOD_VERIFIED': { label: 'Verified by HOD', class: 'info' },
+        'MANAGEMENT_APPROVED': { label: 'Approved by Management', class: 'info' },
+        'FINALIZED': { label: 'Finalized & Deducted', class: 'approved' },
+        'ALLOCATED': { label: 'Approved & Allocated', class: 'approved' },
+        'REJECTED': { label: 'Rejected', class: 'rejected' }
     };
 
-    // Normalize: handle cases where status might be uppercase or slightly different? usually lowercase from backend
-    const normalizedKey = status?.toLowerCase();
+    // Normalize: handle cases where status might be uppercase or slightly different
+    const normalizedKey = status?.toUpperCase();
     const config = statusMap[normalizedKey] || { label: status || 'Unknown', class: 'neutral' };
 
     return (

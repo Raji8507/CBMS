@@ -119,7 +119,7 @@ async function seedAllUsers() {
                 name: 'CS Budget Coordinator',
                 email: 'cs.user@bms.com',
                 password: 'dept123',
-                role: 'department',
+                role: 'coordinator',
                 department: createdDepts[0]._id,
                 permissions: {}
             },
@@ -127,7 +127,7 @@ async function seedAllUsers() {
                 name: 'ECE Budget Coordinator',
                 email: 'ece.user@bms.com',
                 password: 'dept123',
-                role: 'department',
+                role: 'coordinator',
                 department: createdDepts[1]._id,
                 permissions: {}
             },
@@ -135,7 +135,7 @@ async function seedAllUsers() {
                 name: 'MECH Budget Coordinator',
                 email: 'mech.user@bms.com',
                 password: 'dept123',
-                role: 'department',
+                role: 'coordinator',
                 department: createdDepts[2]._id,
                 permissions: {}
             },

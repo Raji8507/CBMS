@@ -39,8 +39,8 @@ const budgetProposalSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['draft', 'submitted', 'verified_by_hod', 'verified_by_principal', 'verified', 'approved', 'rejected', 'revised'],
-    default: 'draft'
+    enum: ['DRAFT', 'PENDING', 'HOD_VERIFIED', 'MANAGEMENT_APPROVED', 'ALLOCATED', 'REJECTED'],
+    default: 'DRAFT'
   },
   approvalSteps: [{
     approver: {
@@ -113,13 +113,13 @@ budgetProposalSchema.pre('save', function (next) {
     }, 0);
   }
 
-  // Set submitted date when status changes to submitted
-  if (this.isModified('status') && this.status === 'submitted' && !this.submittedDate) {
+  // Set submitted date when status changes to PENDING
+  if (this.isModified('status') && this.status === 'PENDING' && !this.submittedDate) {
     this.submittedDate = new Date();
   }
 
-  // Set approved date when status changes to approved
-  if (this.isModified('status') && this.status === 'approved' && !this.approvedDate) {
+  // Set approved date when status changes to ALLOCATED
+  if (this.isModified('status') && this.status === 'ALLOCATED' && !this.approvedDate) {
     this.approvedDate = new Date();
   }
 

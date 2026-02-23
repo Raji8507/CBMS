@@ -6,6 +6,7 @@ const AllocationHistory = require('../models/AllocationHistory');
 const AuditLog = require('../models/AuditLog');
 const { recordAuditLog } = require('../utils/auditService');
 const { notifyProposalSubmission, notifyProposalStatusChange } = require('../utils/notificationService');
+const { VISIBILITY_BY_ROLE, PROPOSAL_TRANSITIONS } = require('../config/workflowRules');
 
 // @desc    Get all budget proposals
 // @route   GET /api/budget-proposals
@@ -17,34 +18,25 @@ const getBudgetProposals = async (req, res) => {
     const query = {};
     if (financialYear) query.financialYear = financialYear;
 
-    // Status filtering
-    if (status) {
+    // RULE 4: Add debug logs
+    console.log(`[Debug] getBudgetProposals - Role: ${req.user.role}, Dept: ${req.user.department}, statusFilter (query.status): ${status}`);
+
+    // Role-based visibility and status filtering
+    const allowedStatuses = VISIBILITY_BY_ROLE[req.user.role];
+
+    if (status === 'pending_approval' && allowedStatuses) {
+      query.status = { $in: allowedStatuses };
+    } else if (status) {
       query.status = status;
     }
 
-    // Role-based visibility and default filtering if status not provided
-    if (['department', 'hod'].includes(req.user.role)) {
+    if (['coordinator', 'hod'].includes(req.user.role)) {
       query.department = req.user.department;
     } else if (department) {
       query.department = department;
     }
 
-    // Smart default filtering based on role if no status is explicitly requested
-    if (!status) {
-      if (req.user.role === 'hod') {
-        // HOD can see all department proposals in history/list views
-        // Only restrict to 'submitted' if explicitly asked (like in approvals queue)
-        // For standard GET, we allow all except maybe drafts if not requested
-      } else if (['principal', 'vice_principal'].includes(req.user.role)) {
-        // Default Principal view: content verified by HOD
-        if (!query.status) query.status = 'verified_by_hod';
-      } else if (req.user.role === 'office') {
-        // Default Office view: content verified by Principal
-        if (!query.status) query.status = 'verified_by_principal';
-      }
-    }
-
-    console.log(`[Debug] getBudgetProposals - Final Query:`, query);
+    console.log(`[Debug] getBudgetProposals - Final Query:`, JSON.stringify(query));
 
     const skip = (page - 1) * limit;
 
@@ -103,7 +95,7 @@ const getBudgetProposalById = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: proposal
+      data: { proposal }
     });
   } catch (error) {
     res.status(500).json({
@@ -156,10 +148,10 @@ const createBudgetProposal = async (req, res) => {
     const existingProposal = await BudgetProposal.findOne({
       financialYear,
       department: req.user.department,
-      status: { $ne: 'rejected' }
+      status: { $ne: 'REJECTED' }
     });
 
-    if (existingProposal && existingProposal.status !== 'draft') {
+    if (existingProposal && existingProposal.status !== 'DRAFT') {
       return res.status(400).json({
         success: false,
         message: `A proposal already exists for ${financialYear} and is currently ${existingProposal.status}`
@@ -173,7 +165,7 @@ const createBudgetProposal = async (req, res) => {
       notes,
       submittedBy: req.user._id,
       lastModifiedBy: req.user._id,
-      status: 'draft'
+      status: 'DRAFT'
     });
 
     await recordAuditLog({
@@ -213,10 +205,11 @@ const updateBudgetProposal = async (req, res) => {
     }
 
     // Only allow updating drafts or revised proposals
-    if (!['draft', 'revised'].includes(proposal.status)) {
+    if (!['DRAFT', 'REVISED'].includes(proposal.status)) {
       return res.status(400).json({
         success: false,
-        message: 'Only draft or revised proposals can be updated'
+        message: `This budget proposal is currently ${proposal.status.toUpperCase()}. Records are locked and cannot be modified once they leave draft state.`,
+        code: 'RECORD_LOCKED'
       });
     }
 
@@ -259,16 +252,19 @@ const submitBudgetProposal = async (req, res) => {
       });
     }
 
-    if (!['draft', 'revised'].includes(proposal.status)) {
-      return res.status(400).json({
+    // Enforce transitions
+    if (!PROPOSAL_TRANSITIONS[proposal.status] || !PROPOSAL_TRANSITIONS[proposal.status].includes('PENDING')) {
+      return res.status(403).json({
         success: false,
-        message: 'Only draft or revised proposals can be submitted'
+        message: `Invalid transition: Cannot submit from ${proposal.status}.`
       });
     }
 
-    proposal.status = 'submitted';
+    proposal.status = 'PENDING';
     proposal.submittedDate = new Date();
     proposal.lastModifiedBy = req.user._id;
+
+    console.log(`[Debug] BudgetProposal Status Transition: DRAFT -> PENDING (by ${req.user.role})`);
 
     await proposal.save();
 
@@ -330,19 +326,21 @@ const approveBudgetProposal = async (req, res) => {
       });
     }
 
-    // Must be verified by Principal/VP first
-    if (proposal.status !== 'verified_by_principal' && proposal.status !== 'verified') {
-      return res.status(400).json({
+    // Enforce transitions
+    if (!PROPOSAL_TRANSITIONS[proposal.status] || !PROPOSAL_TRANSITIONS[proposal.status].includes('ALLOCATED')) {
+      return res.status(403).json({
         success: false,
-        message: 'Only proposals verified by Principal/VP can be approved by Office'
+        message: `Invalid transition: Only proposals with status MANAGEMENT_APPROVED can be allocated. Current status: ${proposal.status}`
       });
     }
 
-    proposal.status = 'approved';
+    proposal.status = 'ALLOCATED';
     proposal.approvedDate = new Date();
     proposal.approvedBy = req.user._id;
     if (notes) proposal.notes = notes;
     proposal.lastModifiedBy = req.user._id;
+
+    console.log(`[Debug] BudgetProposal Status Transition: MANAGEMENT_APPROVED -> ALLOCATED (by ${req.user.role})`);
 
     // Add approval step
     proposal.approvalSteps.push({
@@ -498,6 +496,18 @@ const verifyBudgetProposal = async (req, res) => {
       });
     }
 
+    // Role-based Transition Guards
+    // RULE 3: Enforce transitions at API level
+    // Enforce transitions
+    const targetStatus = req.user.role === 'hod' ? 'HOD_VERIFIED' : 'MANAGEMENT_APPROVED';
+
+    if (!PROPOSAL_TRANSITIONS[proposal.status] || !PROPOSAL_TRANSITIONS[proposal.status].includes(targetStatus)) {
+      return res.status(403).json({
+        success: false,
+        message: `Invalid transition: ${req.user.role.toUpperCase()} cannot verify proposal at ${proposal.status} status.`
+      });
+    }
+
     // Check permissions
     // HOD verifies first. Then Principal/VP verifies.
     const allowedVerifyRoles = ['hod', 'principal', 'vice_principal'];
@@ -526,23 +536,8 @@ const verifyBudgetProposal = async (req, res) => {
           message: 'You can only verify proposals from your department'
         });
       }
-
-      if (proposal.status !== 'submitted') {
-        return res.status(400).json({
-          success: false,
-          message: 'HOD can only verify submitted proposals'
-        });
-      }
-      nextStatus = 'verified_by_hod';
-
+      nextStatus = 'HOD_VERIFIED';
     } else if (['principal', 'vice_principal'].includes(req.user.role)) {
-      if (proposal.status !== 'verified_by_hod' && proposal.status !== 'verified') {
-        return res.status(400).json({
-          success: false,
-          message: 'Principal/VP can only verify proposals verified by HOD'
-        });
-      }
-
       // Check if another Principal/VP has already verified (one of them wins)
       const principalVerified = proposal.approvalSteps.some(step => ['principal', 'vice_principal'].includes(step.role) && step.decision === 'verify');
       if (principalVerified) {
@@ -551,8 +546,10 @@ const verifyBudgetProposal = async (req, res) => {
           message: 'Proposal has already been verified by Principal/VP'
         });
       }
-      nextStatus = 'verified_by_principal';
+      nextStatus = 'MANAGEMENT_APPROVED';
     }
+
+    console.log(`[Debug] BudgetProposal Transition: ${proposal.status} -> ${nextStatus} (by ${req.user.role})`);
 
     proposal.status = nextStatus;
     proposal.lastModifiedBy = req.user._id;
@@ -631,16 +628,18 @@ const rejectBudgetProposal = async (req, res) => {
       });
     }
 
-    if (!['submitted', 'verified'].includes(proposal.status)) {
+    if (!['PENDING', 'HOD_VERIFIED', 'MANAGEMENT_APPROVED'].includes(proposal.status)) {
       return res.status(400).json({
         success: false,
-        message: 'Only submitted or verified proposals can be rejected'
+        message: 'Only pending, HOD verified, or management approved proposals can be rejected'
       });
     }
 
-    proposal.status = 'rejected';
+    proposal.status = 'REJECTED';
     proposal.rejectionReason = rejectionReason;
     proposal.lastModifiedBy = req.user._id;
+
+    console.log(`[Debug] BudgetProposal Status Transition: ${proposal.status} -> REJECTED (by ${req.user.role})`);
 
     // Add rejection step
     proposal.approvalSteps.push({
@@ -700,7 +699,7 @@ const resubmitBudgetProposal = async (req, res) => {
       });
     }
 
-    if (originalProposal.status !== 'rejected') {
+    if (originalProposal.status !== 'REJECTED') {
       return res.status(400).json({
         success: false,
         message: 'Only rejected proposals can be resubmitted'
@@ -708,7 +707,7 @@ const resubmitBudgetProposal = async (req, res) => {
     }
 
     // Authorization check
-    if (['department', 'hod'].includes(req.user.role)) {
+    if (['coordinator', 'hod'].includes(req.user.role)) {
       if (originalProposal.department.toString() !== req.user.department.toString()) {
         return res.status(403).json({
           success: false,
@@ -728,12 +727,12 @@ const resubmitBudgetProposal = async (req, res) => {
         previousYearUtilization: item.previousYearUtilization
       })),
       notes: `Resubmission of rejected proposal ${id}. ${originalProposal.notes || ''} `,
-      status: 'draft',
+      status: 'DRAFT',
       submittedBy: req.user._id
     });
 
-    // Update original proposal as 'revised'
-    originalProposal.status = 'revised';
+    // Update original proposal as 'REVISED'
+    originalProposal.status = 'REVISED';
     await originalProposal.save();
 
     const populatedProposal = await BudgetProposal.findById(newProposal._id)
@@ -780,8 +779,8 @@ const getBudgetProposalsStats = async (req, res) => {
     const query = {};
     if (financialYear) query.financialYear = financialYear;
 
-    // Department and HOD users get stats for their own department only
-    if (['department', 'hod'].includes(req.user.role)) {
+    // Coordinator and HOD users get stats for their own department only
+    if (['coordinator', 'hod'].includes(req.user.role)) {
       query.department = req.user.department;
     }
 
@@ -840,10 +839,11 @@ const deleteBudgetProposal = async (req, res) => {
     }
 
     // Only allow deletion of draft or rejected proposals
-    if (!['draft', 'rejected'].includes(proposal.status)) {
+    if (!['DRAFT', 'REJECTED'].includes(proposal.status)) {
       return res.status(400).json({
         success: false,
-        message: 'Only draft or rejected proposals can be deleted'
+        message: `This budget proposal is ${proposal.status.toUpperCase()} and cannot be deleted. Only draft or rejected proposals can be removed.`,
+        code: 'RECORD_LOCKED'
       });
     }
 

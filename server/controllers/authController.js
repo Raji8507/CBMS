@@ -21,7 +21,7 @@ const registerUser = async (req, res, next) => {
         }
 
         // Validate department if role requires it
-        if (['department', 'hod'].includes(role) && department) {
+        if (['coordinator', 'hod'].includes(role) && department) {
             const deptExists = await Department.findById(department);
             if (!deptExists) {
                 return res.status(400).json({
@@ -35,9 +35,8 @@ const registerUser = async (req, res, next) => {
         const user = await User.create({
             name,
             email,
-            password,
             role,
-            department: ['department', 'hod'].includes(role) ? department : undefined
+            department: ['coordinator', 'hod'].includes(role) ? department : undefined
         });
 
         // Generate token

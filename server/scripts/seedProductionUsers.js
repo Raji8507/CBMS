@@ -148,7 +148,7 @@ async function seedProduction() {
                 name: `${dept.code} Department User`,
                 email: `${deptCode}.user@${EMAIL_DOMAIN}`,
                 password: 'Dept@2024',
-                role: 'department',
+                role: 'coordinator',
                 department: dept._id,
                 permissions: { canApprove: false }
             };
@@ -160,7 +160,7 @@ async function seedProduction() {
                 name: `${dept.code} Budget Coordinator`,
                 email: `${deptCode}.coordinator@${EMAIL_DOMAIN}`,
                 password: 'Coord@2024',
-                role: 'department',
+                role: 'coordinator',
                 department: dept._id,
                 permissions: { canApprove: false }
             };

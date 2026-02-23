@@ -60,8 +60,8 @@ const GraphicalDashboard = () => {
           financialYear: targetFY
         }),
         expenditureAPI.getExpenditures({
-          departmentId: user.role === 'department' ? user.department : undefined,
-          status: 'finalized'
+          departmentId: ['department', 'hod'].includes(user.role) ? (user.department?._id || user.department) : undefined,
+          status: 'FINALIZED'
         }),
         reportAPI.getDashboardReport({
           departmentId: ['department', 'hod'].includes(user.role) ? (user.department?._id || user.department) : undefined,
@@ -163,7 +163,7 @@ const GraphicalDashboard = () => {
   };
 
   const getDepartmentComparisonOption = () => {
-    if (!dashboardData || user.role === 'department' || !dashboardData.allocations || dashboardData.allocations.length === 0) {
+    if (!dashboardData || ['department', 'hod'].includes(user.role) || !dashboardData.allocations || dashboardData.allocations.length === 0) {
       return null;
     }
 
@@ -380,7 +380,8 @@ const GraphicalDashboard = () => {
     const expenditures = dashboardData.expenditures;
 
     const totalAllocated = allocations.reduce((sum, a) => sum + a.allocatedAmount, 0);
-    const totalSpent = expenditures.reduce((sum, e) => sum + (e.totalAmount || 0), 0);
+    // Only count FINALIZED expenditures as spent
+    const totalSpent = expenditures.filter(e => e.status === 'FINALIZED').reduce((sum, e) => sum + (e.totalAmount || 0), 0);
     const totalRemaining = totalAllocated - totalSpent;
     const utilizationPercentage = totalAllocated > 0 ? (totalSpent / totalAllocated) * 100 : 0;
 

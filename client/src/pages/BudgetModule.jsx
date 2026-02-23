@@ -100,10 +100,9 @@ export const BudgetAllocations = () => {
     };
 
     const getUtilizationColor = (percentage) => {
-        if (percentage >= 90) return '#dc3545';
-        if (percentage >= 75) return '#ffc107';
-        if (percentage >= 50) return '#17a2b8';
-        return '#28a745';
+        if (percentage >= 90) return '#dc3545'; // Red (Risk)
+        if (percentage >= 75) return '#ffc107'; // Yellow (Warning)
+        return '#28a745'; // Green (Safe)
     };
 
     if (loading) {
@@ -788,6 +787,7 @@ export const BudgetProposalForm = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [lastRefreshed, setLastRefreshed] = useState(new Date());
     const [showApprovalModal, setShowApprovalModal] = useState(false);
+    const [isReadOnly, setIsReadOnly] = useState(false);
     const [allDepartmentsStats, setAllDepartmentsStats] = useState([]);
     const [loadingStats, setLoadingStats] = useState(false);
     const [formData, setFormData] = useState({
@@ -855,12 +855,14 @@ export const BudgetProposalForm = () => {
             };
 
             if (currentDeptExpenditures && currentDeptExpenditures.length > 0) {
-                // Sum billAmount from ALL departmental expenditures for current year
-                stats.currentYearSpent = currentDeptExpenditures.reduce((sum, e) => {
-                    const amount = parseFloat(e.billAmount) || 0;
-                    return sum + amount;
-                }, 0);
-                console.log(`[Stats Debug] Final calculated currentYearSpent: ${stats.currentYearSpent}`);
+                // Sum billAmount from ONLY departmental expenditures that are FINALIZED for current year
+                stats.currentYearSpent = currentDeptExpenditures
+                    .filter(e => e.status === 'FINALIZED')
+                    .reduce((sum, e) => {
+                        const amount = parseFloat(e.billAmount) || 0;
+                        return sum + amount;
+                    }, 0);
+                console.log(`[Stats Debug] Final calculated currentYearSpent (Finalized): ${stats.currentYearSpent}`);
             }
 
             if (prevAllocations && prevAllocations.length > 0) {
@@ -936,7 +938,6 @@ export const BudgetProposalForm = () => {
         if (isEditMode) {
             const fetchProposal = async () => {
                 try {
-                    setFetching(true);
                     const response = await budgetProposalAPI.getBudgetProposalById(id);
                     const proposal = response.data.data.proposal;
 
@@ -959,6 +960,11 @@ export const BudgetProposalForm = () => {
                         proposalItems: items,
                         notes: proposal.notes || ''
                     });
+
+                    // Enforce read-only for already approved/verified proposals
+                    if (['ALLOCATED', 'MANAGEMENT_APPROVED', 'HOD_VERIFIED'].includes(proposal.status)) {
+                        setIsReadOnly(true);
+                    }
 
                     // Auto-fetch budget stats if not available
                     items.forEach((item, index) => {
@@ -1349,7 +1355,7 @@ export const BudgetProposalForm = () => {
                                         value={item.budgetHead}
                                         onChange={(e) => handleItemChange(index, 'budgetHead', e.target.value)}
                                         required
-                                        disabled={isEditMode && ['hod', 'officer', 'vp', 'p'].includes(user?.role)}
+                                        disabled={isReadOnly || (isEditMode && ['hod', 'officer', 'vp', 'p'].includes(user?.role))}
                                     >
                                         <option value="">Select Budget Head</option>
                                         {budgetHeads.map(head => (
@@ -1370,7 +1376,7 @@ export const BudgetProposalForm = () => {
                                         min="0"
                                         step="0.01"
                                         required
-                                        disabled={isEditMode && ['hod', 'officer', 'vp', 'p'].includes(user?.role)}
+                                        disabled={isReadOnly || (isEditMode && ['hod', 'officer', 'vp', 'p'].includes(user?.role))}
                                     />
                                 </div>
 
@@ -1430,7 +1436,7 @@ export const BudgetProposalForm = () => {
                                                     placeholder="0"
                                                     min="0"
                                                     step="0.01"
-                                                    disabled={['hod', 'office', 'vice_principal', 'principal'].includes(user?.role)}
+                                                    disabled={isReadOnly || ['hod', 'office', 'vice_principal', 'principal'].includes(user?.role)}
                                                     style={{
                                                         height: '32px',
                                                         padding: '4px 8px',
@@ -1498,7 +1504,7 @@ export const BudgetProposalForm = () => {
                     {/* Quick Approve/Verify buttons in Form */}
                     {isEditMode && (
                         <>
-                            {user?.role === 'hod' && formData.status === 'submitted' && (
+                            {user?.role === 'hod' && formData.status === 'PENDING' && (
                                 <button
                                     type="button"
                                     className="btn btn-primary"
@@ -1513,7 +1519,7 @@ export const BudgetProposalForm = () => {
                                     <ShieldCheck size={18} /> Verify Proposal
                                 </button>
                             )}
-                            {['principal', 'vice_principal'].includes(user?.role) && formData.status === 'verified' && (
+                            {['principal', 'vice_principal'].includes(user?.role) && formData.status === 'HOD_VERIFIED' && (
                                 <button
                                     type="button"
                                     className="btn btn-primary"
@@ -1528,7 +1534,7 @@ export const BudgetProposalForm = () => {
                                     <ShieldCheck size={18} /> Verify & Accept
                                 </button>
                             )}
-                            {user?.role === 'office' && formData.status === 'verified' && (
+                            {user?.role === 'office' && formData.status === 'MANAGEMENT_APPROVED' && (
                                 <button
                                     type="button"
                                     className="btn btn-success"
@@ -1545,15 +1551,17 @@ export const BudgetProposalForm = () => {
                             )}
                         </>
                     )}
-                    <button
-                        type="button"
-                        className="btn btn-success"
-                        onClick={() => handleSubmit(null, 'submitted')}
-                        disabled={loading}
-                        style={{ color: 'white' }}
-                    >
-                        <Send size={18} /> {loading ? 'Submitting...' : 'Save & Submit'}
-                    </button>
+                    {!isReadOnly && (
+                        <button
+                            type="button"
+                            className="btn btn-success"
+                            onClick={() => handleSubmit(null, 'submitted')}
+                            disabled={loading}
+                            style={{ color: 'white' }}
+                        >
+                            <Send size={18} /> {loading ? 'Submitting...' : 'Save & Submit'}
+                        </button>
+                    )}
                 </div>
 
                 {/* Approval Modal for viewing all departments' stats */}
@@ -1769,11 +1777,13 @@ export const BudgetProposalReport = () => {
     };
 
     const getStatusIcon = (status) => {
-        switch (status) {
-            case 'approved': return <CheckCircle size={16} className="text-success" />;
-            case 'verified': return <ShieldCheck size={16} className="text-info" />;
-            case 'submitted': return <Clock size={16} className="text-primary" />;
-            case 'rejected': return <XCircle size={16} className="text-danger" />;
+        const s = status?.toUpperCase();
+        switch (s) {
+            case 'ALLOCATED': return <CheckCircle size={16} className="text-success" />;
+            case 'MANAGEMENT_APPROVED': return <ShieldCheck size={16} className="text-info" />;
+            case 'HOD_VERIFIED': return <ShieldCheck size={16} className="text-info" />;
+            case 'PENDING': return <Clock size={16} className="text-primary" />;
+            case 'REJECTED': return <XCircle size={16} className="text-danger" />;
             default: return <FileText size={16} className="text-secondary" />;
         }
     };
@@ -1843,11 +1853,12 @@ export const BudgetProposalReport = () => {
                     <label>Status</label>
                     <select name="status" value={filters.status} onChange={handleFilterChange}>
                         <option value="">All Status</option>
-                        <option value="draft">Draft</option>
-                        <option value="submitted">Submitted</option>
-                        <option value="verified">Verified</option>
-                        <option value="approved">Approved</option>
-                        <option value="rejected">Rejected</option>
+                        <option value="DRAFT">Draft</option>
+                        <option value="PENDING">Pending Verification</option>
+                        <option value="HOD_VERIFIED">Verified by HOD</option>
+                        <option value="MANAGEMENT_APPROVED">Approved by Management</option>
+                        <option value="ALLOCATED">Allocated</option>
+                        <option value="REJECTED">Rejected</option>
                     </select>
                 </div>
 
@@ -1867,13 +1878,13 @@ export const BudgetProposalReport = () => {
                         />
                         <StatCard
                             title="Approved"
-                            value={report.summary.byStatus.approved || 0}
+                            value={report.summary.byStatus.MANAGEMENT_APPROVED || 0}
                             icon={<CheckCircle size={24} />}
                             color="var(--success)"
                         />
                         <StatCard
                             title="Pending Approval"
-                            value={(report.summary.byStatus.submitted || 0) + (report.summary.byStatus.verified || 0)}
+                            value={(report.summary.byStatus.PENDING || 0) + (report.summary.byStatus.HOD_VERIFIED || 0)}
                             icon={<Clock size={24} />}
                             color="var(--warning)"
                         />
@@ -1926,7 +1937,7 @@ export const BudgetProposalReport = () => {
                                                 {new Date(p.updatedAt).toLocaleDateString()}
                                             </td>
                                             <td className="text-center">
-                                                {(p.status === 'submitted' || p.status === 'verified') && ['admin', 'office', 'principal', 'vice_principal'].includes(user?.role) && (
+                                                {(p.status === 'PENDING' || p.status === 'HOD_VERIFIED') && ['admin', 'office', 'principal', 'vice_principal'].includes(user?.role) && (
                                                     <div className="action-buttons">
                                                         <button
                                                             className="btn-action approve"
@@ -1952,7 +1963,7 @@ export const BudgetProposalReport = () => {
                                                         </button>
                                                     </div>
                                                 )}
-                                                {p.status === 'approved' && (
+                                                {p.status === 'MANAGEMENT_APPROVED' && (
                                                     <button
                                                         className="btn-action allocate"
                                                         onClick={() => navigate(`/allocations/add?proposalId=${p._id}&deptId=${p.department._id}&fy=${p.financialYear}`)}
@@ -2285,25 +2296,27 @@ export const BudgetProposals = () => {
 
     const getStatusColor = (status) => {
         const colors = {
-            draft: '#ffc107',
-            submitted: '#17a2b8',
-            verified: '#6f42c1',
-            approved: '#28a745',
-            rejected: '#dc3545',
-            revised: '#6c757d'
+            'DRAFT': '#ffc107',
+            'PENDING': '#17a2b8',
+            'HOD_VERIFIED': '#6f42c1',
+            'MANAGEMENT_APPROVED': '#6f42c1',
+            'ALLOCATED': '#28a745',
+            'REJECTED': '#dc3545',
+            'REVISED': '#6c757d'
         };
         return colors[status] || '#6c757d';
     };
 
     const getStatusIcon = (status) => {
         switch (status) {
-            case 'approved':
+            case 'ALLOCATED':
                 return <CheckCircle size={18} style={{ color: '#28a745' }} />;
-            case 'rejected':
+            case 'REJECTED':
                 return <XCircle size={18} style={{ color: '#dc3545' }} />;
-            case 'verified':
+            case 'MANAGEMENT_APPROVED':
+            case 'HOD_VERIFIED':
                 return <ShieldCheck size={18} style={{ color: '#6f42c1' }} />;
-            case 'submitted':
+            case 'PENDING':
                 return <Clock size={18} style={{ color: '#17a2b8' }} />;
             default:
                 return null;
@@ -2388,12 +2401,12 @@ export const BudgetProposals = () => {
                         onChange={handleFilterChange}
                     >
                         <option value="">All Status</option>
-                        <option value="draft">Draft</option>
-                        <option value="submitted">Submitted</option>
-                        <option value="verified">Verified</option>
-                        <option value="approved">Approved</option>
-                        <option value="rejected">Rejected</option>
-                        <option value="revised">Revised</option>
+                        <option value="DRAFT">Draft</option>
+                        <option value="PENDING">Pending Approval</option>
+                        <option value="HOD_VERIFIED">HOD Verified</option>
+                        <option value="MANAGEMENT_APPROVED">Management Approved</option>
+                        <option value="ALLOCATED">Allocated</option>
+                        <option value="REJECTED">Rejected</option>
                     </select>
                 </div>
             </div>
@@ -2458,7 +2471,7 @@ export const BudgetProposals = () => {
                                                     <Eye size={16} />
                                                 </Link>
                                             </Tooltip>
-                                            {(proposal.status === 'draft' || proposal.status === 'revised') && (
+                                            {(proposal.status === 'DRAFT' || proposal.status === 'REVISED') && (
                                                 <>
                                                     <Tooltip text="Edit Proposal" position="top">
                                                         <Link
@@ -2479,7 +2492,7 @@ export const BudgetProposals = () => {
                                                     </Tooltip>
                                                 </>
                                             )}
-                                            {proposal.status === 'rejected' && (
+                                            {proposal.status === 'REJECTED' && (
                                                 <Tooltip text="Resubmit (Copy to Draft)" position="top">
                                                     <button
                                                         onClick={() => handleResubmitProposal(proposal._id)}

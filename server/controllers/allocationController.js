@@ -179,7 +179,7 @@ const createAllocation = async (req, res) => {
         });
       }
 
-      if (proposal.status !== 'approved') {
+      if (proposal.status !== 'ALLOCATED' && proposal.status !== 'MANAGEMENT_APPROVED') {
         await session.abortTransaction();
         session.endSession();
         return res.status(400).json({

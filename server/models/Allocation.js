@@ -58,6 +58,9 @@ const allocationSchema = new mongoose.Schema({
   lastModifiedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  },
+  lastTransactionDate: {
+    type: Date
   }
 }, {
   timestamps: true

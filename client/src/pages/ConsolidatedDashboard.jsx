@@ -423,9 +423,9 @@ const ConsolidatedDashboard = () => {
                 <div className="activity-status">
                   <span
                     className={`status-badge ${expenditure.status}`}
-                    style={{ backgroundColor: getUtilizationColor(expenditure.status === 'approved' ? 100 : expenditure.status === 'pending' ? 50 : 0) }}
+                    style={{ backgroundColor: getUtilizationColor(expenditure.status === 'FINALIZED' ? 100 : expenditure.status === 'PENDING' ? 50 : 0) }}
                   >
-                    {expenditure.status.charAt(0).toUpperCase() + expenditure.status.slice(1)}
+                    {expenditure.status}
                   </span>
                 </div>
               </div>

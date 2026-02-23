@@ -41,8 +41,8 @@ const incomeSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['expected', 'received', 'verified'],
-        default: 'expected',
+        enum: ['EXPECTED', 'RECEIVED', 'VERIFIED'],
+        default: 'EXPECTED',
         index: true
     },
     referenceNumber: {
@@ -88,7 +88,7 @@ incomeSchema.index({ createdAt: -1 });
 
 // Virtual for verification status
 incomeSchema.virtual('isVerified').get(function () {
-    return this.status === 'verified';
+    return this.status === 'VERIFIED';
 });
 
 // Ensure virtual fields are serialized
@@ -109,13 +109,13 @@ incomeSchema.pre('save', function (next) {
         }
     }
 
-    // Set receivedDate when status changes to 'received'
-    if (this.isModified('status') && this.status === 'received' && !this.receivedDate) {
+    // Set receivedDate when status changes to 'RECEIVED'
+    if (this.isModified('status') && this.status === 'RECEIVED' && !this.receivedDate) {
         this.receivedDate = new Date();
     }
 
-    // Set verifiedAt when status changes to 'verified'
-    if (this.isModified('status') && this.status === 'verified' && !this.verifiedAt) {
+    // Set verifiedAt when status changes to 'VERIFIED'
+    if (this.isModified('status') && this.status === 'VERIFIED' && !this.verifiedAt) {
         this.verifiedAt = new Date();
     }
 

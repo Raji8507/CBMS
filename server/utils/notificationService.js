@@ -531,7 +531,7 @@ const notifyBudgetExhaustion = async (allocation) => {
 const sendApprovalReminders = async () => {
   try {
     const pendingExpenditures = await Expenditure.find({
-      status: { $in: ['pending', 'verified'] },
+      status: { $in: ['PENDING', 'HOD_VERIFIED', 'MANAGEMENT_APPROVED'] },
       createdAt: { $lte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } // Older than 7 days
     }).populate('department budgetHead');
 

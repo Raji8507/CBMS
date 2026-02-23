@@ -26,7 +26,7 @@ const HODDashboard = () => {
   const [previousYearStats, setPreviousYearStats] = useState({});
 
   const { socket } = useSocket();
-  const [statusFilter] = useState('pending'); // Action Zone: Only Pending Verification
+  const [statusFilter] = useState('PENDING'); // Action Zone: Only Pending Verification
   const [dashboardData, setDashboardData] = useState({
     stats: {
       requested: { value: 0 },
@@ -65,10 +65,11 @@ const HODDashboard = () => {
 
   const getProposalSectionTitle = () => {
     switch (statusFilter) {
-      case 'pending': return 'Budget Proposals Awaiting Verification';
-      case 'verified': return 'Verified Budget Proposals';
-      case 'approved': return 'Sanctioned Budget Proposals';
-      case 'rejected': return 'Rejected Budget Proposals';
+      case 'PENDING': return 'Budget Proposals Awaiting Verification';
+      case 'HOD_VERIFIED': return 'Verified Budget Proposals';
+      case 'MANAGEMENT_APPROVED': return 'Sanctioned Budget Proposals';
+      case 'ALLOCATED': return 'Allocated Budget Proposals';
+      case 'REJECTED': return 'Rejected Budget Proposals';
       default: return 'Budget Proposals';
     }
   };
@@ -244,7 +245,7 @@ const HODDashboard = () => {
       };
 
       // If pending, we specifically want items waiting for HOD
-      if (statusFilter === 'pending') {
+      if (statusFilter === 'PENDING') {
         params.currentApprover = 'hod';
       }
 
@@ -264,15 +265,15 @@ const HODDashboard = () => {
       };
 
       // Map dashboard filter to proposal status
-      if (statusFilter === 'pending') {
-        params.status = 'submitted';
-      } else if (statusFilter === 'verified') {
+      if (statusFilter === 'PENDING') {
+        params.status = 'PENDING';
+      } else if (statusFilter === 'HOD_VERIFIED') {
         // HOD verified means it's with Principal or Office now or simply verified by HOD
-        params.status = 'verified_by_hod';
-      } else if (statusFilter === 'approved') {
-        params.status = 'approved';
-      } else if (statusFilter === 'rejected') {
-        params.status = 'rejected';
+        params.status = 'HOD_VERIFIED';
+      } else if (statusFilter === 'MANAGEMENT_APPROVED') {
+        params.status = 'MANAGEMENT_APPROVED';
+      } else if (statusFilter === 'REJECTED') {
+        params.status = 'REJECTED';
       }
 
       const response = await budgetProposalAPI.getBudgetProposals(params);
@@ -321,6 +322,18 @@ const HODDashboard = () => {
         const deptId = user.department?._id || user.department;
 
         if (deptId) {
+          // RULE 4: Ensure HOD fetch APIs DO NOT filter out PENDING proposals
+          const proposalRes = await budgetProposalAPI.getBudgetProposals({
+            status: 'PENDING',
+            department: user.department
+          });
+
+          // RULE 4: Ensure HOD fetch APIs DO NOT filter out PENDING expenditures
+          const expenditureRes = await expenditureAPI.getExpenditures({
+            status: 'PENDING',
+            department: user.department
+          });
+
           const allocRes = await allocationAPI.getAllocations({
             financialYear: prevFY,
             department: deptId

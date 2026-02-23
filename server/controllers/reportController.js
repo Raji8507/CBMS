@@ -306,37 +306,43 @@ const getDashboardReport = async (req, res) => {
       financialYear: currentFY,
       // 1. Requested Amount (sum of all pending + approved event requests)
       totalRequested: expenditures
-        .filter(exp => ['pending', 'verified', 'approved'].includes(exp.status))
+        .filter(exp => ['PENDING', 'HOD_VERIFIED', 'MANAGEMENT_APPROVED'].includes(exp.status))
         .reduce((sum, exp) => sum + (exp.totalAmount || 0), 0),
 
       // 2. Approved Budget (Total allocations for the department)
       totalAllocated: allocations.reduce((sum, alloc) => sum + alloc.allocatedAmount, 0),
 
-      // 3. Utilized Amount (Finalized Phase 2 events only)
+      // 3. Utilized Amount (Finalized Phase 2 events only - RULE 5)
       totalUtilized: expenditures
-        .filter(exp => exp.status === 'finalized')
+        .filter(exp => exp.status === 'FINALIZED')
         .reduce((sum, exp) => sum + (exp.totalAmount || 0), 0),
 
-      // 4. Pending Amount (events under verification/approval - NOT deducted)
+      // 4. Pending Amount (events under verification/approval - RULE 5)
       totalPending: expenditures
-        .filter(exp => ['pending', 'verified', 'approved'].includes(exp.status))
+        .filter(exp => ['PENDING', 'HOD_VERIFIED', 'MANAGEMENT_APPROVED'].includes(exp.status))
         .reduce((sum, exp) => sum + (exp.totalAmount || 0), 0),
+
+      // 5. Allocated Amount (RULE 5: Allocated = ALLOCATED only for proposals)
+      // This refers to the total amount allocated via ALLOCATED budget proposals for the FY
+      totalAllocatedProposals: proposals
+        .filter(p => p.status === 'ALLOCATED')
+        .reduce((sum, p) => sum + (p.totalProposedAmount || 0), 0),
 
       // Legacy field for compatibility if needed elsewhere
       remainingBalance: (allocations.reduce((sum, alloc) => sum + alloc.allocatedAmount, 0)) -
-        (expenditures.filter(exp => exp.status === 'finalized').reduce((sum, exp) => sum + (exp.totalAmount || 0), 0)),
+        (expenditures.filter(exp => exp.status === 'FINALIZED').reduce((sum, exp) => sum + (exp.totalAmount || 0), 0)),
 
       // Support for status breakdown count
       statusBreakdown: {
-        pending: 0,
-        verified: 0,
-        approved: 0,
-        finalized: 0,
-        rejected: 0
+        PENDING: 0,
+        HOD_VERIFIED: 0,
+        MANAGEMENT_APPROVED: 0,
+        FINALIZED: 0,
+        REJECTED: 0
       },
 
       recentEvents: expenditures
-        .filter(exp => exp.status === 'finalized')
+        .filter(exp => exp.status === 'FINALIZED')
         .sort((a, b) => new Date(b.eventDate) - new Date(a.eventDate))
         .slice(0, 10)
         .map(exp => ({
@@ -364,7 +370,7 @@ const getDashboardReport = async (req, res) => {
 
     const dailyExpenditures = expenditures.filter(exp => {
       const eventDate = new Date(exp.eventDate);
-      return eventDate >= today && eventDate < tomorrow && ['approved', 'finalized'].includes(exp.status);
+      return eventDate >= today && eventDate < tomorrow && ['MANAGEMENT_APPROVED', 'FINALIZED'].includes(exp.status);
     });
 
     consolidated.dailyTotal = dailyExpenditures.reduce((sum, exp) => sum + (exp.totalAmount || 0), 0);
@@ -430,7 +436,7 @@ const getDashboardReport = async (req, res) => {
 
     // Monthly trend (Finalized only)
     expenditures
-      .filter(exp => exp.status === 'finalized')
+      .filter(exp => exp.status === 'FINALIZED')
       .forEach(exp => {
         const month = (exp.eventDate || exp.createdAt).toISOString().substring(0, 7);
         consolidated.monthlyTrend[month] = (consolidated.monthlyTrend[month] || 0) + (exp.totalAmount || 0);
@@ -554,12 +560,14 @@ const getBudgetProposalReport = async (req, res) => {
       totalProposals: proposals.length,
       totalProposedAmount: proposals.reduce((sum, p) => sum + p.totalProposedAmount, 0),
       byStatus: {
-        draft: 0,
-        submitted: 0,
-        verified: 0,
-        approved: 0,
-        rejected: 0,
-        revised: 0
+        DRAFT: 0,
+        PENDING: 0,
+        HOD_VERIFIED: 0,
+        MANAGEMENT_APPROVED: 0,
+        REJECTED: 0,
+        REVISED: 0,
+        ALLOCATED: 0,
+        FINALIZED: 0
       },
       byDepartment: {}
     };
@@ -622,7 +630,7 @@ const getYearComparisonData = async (previousFY, currentFY) => {
 
     const prevExpenditures = await Expenditure.find({
       eventDate: { $gte: prevStartDate, $lte: prevEndDate },
-      status: 'finalized'
+      status: 'FINALIZED'
     });
 
     // Get current year data (already fetched)
@@ -635,7 +643,7 @@ const getYearComparisonData = async (previousFY, currentFY) => {
 
     const currentExpenditures = await Expenditure.find({
       eventDate: { $gte: currentStartDate, $lte: currentEndDate },
-      status: 'finalized'
+      status: 'FINALIZED'
     });
 
     // Calculate comparison metrics

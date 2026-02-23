@@ -140,7 +140,7 @@ const bulkSetup = async (req, res) => {
                     name: `${code} Department User`,
                     email: `${lowCode}.user@${emailDomain}`,
                     password: 'Dept@2024',
-                    role: 'department',
+                    role: 'coordinator',
                     department: deptId,
                     permissions: { canApprove: false }
                 },
@@ -148,7 +148,7 @@ const bulkSetup = async (req, res) => {
                     name: `${code} Budget Coordinator`,
                     email: `${lowCode}.coordinator@${emailDomain}`,
                     password: 'Coord@2024',
-                    role: 'department',
+                    role: 'coordinator',
                     department: deptId,
                     permissions: { canApprove: false }
                 },

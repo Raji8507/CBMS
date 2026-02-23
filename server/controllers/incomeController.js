@@ -142,7 +142,7 @@ const createIncome = async (req, res) => {
             amount: parseFloat(amount),
             receivedDate: receivedDate ? new Date(receivedDate) : null,
             expectedDate: expectedDate ? new Date(expectedDate) : null,
-            status: status || 'expected',
+            status: status || 'EXPECTED',
             referenceNumber,
             description,
             remarks,
@@ -150,11 +150,11 @@ const createIncome = async (req, res) => {
         });
 
         // Update FinancialYear totals
-        if (status === 'expected') {
+        if (status === 'EXPECTED') {
             await FinancialYear.findByIdAndUpdate(fy._id, {
                 $inc: { totalIncomeExpected: parseFloat(amount) }
             });
-        } else if (status === 'received') {
+        } else if (status === 'RECEIVED') {
             await FinancialYear.findByIdAndUpdate(fy._id, {
                 $inc: {
                     totalIncomeExpected: parseFloat(amount),
@@ -240,17 +240,17 @@ const updateIncome = async (req, res) => {
             const fy = await FinancialYear.findOne({ year: income.financialYear });
             if (fy) {
                 // Reverse previous impact
-                if (previousStatus === 'expected') {
+                if (previousStatus === 'EXPECTED') {
                     fy.totalIncomeExpected -= previousAmount;
-                } else if (previousStatus === 'received') {
+                } else if (previousStatus === 'RECEIVED') {
                     fy.totalIncomeExpected -= previousAmount;
                     fy.totalIncomeReceived -= previousAmount;
                 }
 
                 // Apply new impact
-                if (income.status === 'expected') {
+                if (income.status === 'EXPECTED') {
                     fy.totalIncomeExpected += income.amount;
-                } else if (income.status === 'received' || income.status === 'verified') {
+                } else if (income.status === 'RECEIVED' || income.status === 'VERIFIED') {
                     fy.totalIncomeExpected += income.amount;
                     fy.totalIncomeReceived += income.amount;
                 }
@@ -307,14 +307,14 @@ const verifyIncome = async (req, res) => {
             });
         }
 
-        if (income.status !== 'received') {
+        if (income.status !== 'RECEIVED') {
             return res.status(400).json({
                 success: false,
                 message: 'Only received income can be verified'
             });
         }
 
-        income.status = 'verified';
+        income.status = 'VERIFIED';
         income.verifiedBy = req.user._id;
         income.verifiedAt = new Date();
         if (remarks) income.remarks = remarks;
@@ -368,7 +368,7 @@ const deleteIncome = async (req, res) => {
         }
 
         // Don't allow deletion of verified income
-        if (income.status === 'verified') {
+        if (income.status === 'VERIFIED') {
             return res.status(400).json({
                 success: false,
                 message: 'Cannot delete verified income. Contact system administrator.'
@@ -378,9 +378,9 @@ const deleteIncome = async (req, res) => {
         // Update FinancialYear totals
         const fy = await FinancialYear.findOne({ year: income.financialYear });
         if (fy) {
-            if (income.status === 'expected') {
+            if (income.status === 'EXPECTED') {
                 fy.totalIncomeExpected -= income.amount;
-            } else if (income.status === 'received') {
+            } else if (income.status === 'RECEIVED') {
                 fy.totalIncomeExpected -= income.amount;
                 fy.totalIncomeReceived -= income.amount;
             }
@@ -431,13 +431,13 @@ const getIncomeStats = async (req, res) => {
                 $group: {
                     _id: null,
                     totalExpected: {
-                        $sum: { $cond: [{ $in: ['$status', ['expected', 'received', 'verified']] }, '$amount', 0] }
+                        $sum: { $cond: [{ $in: ['$status', ['EXPECTED', 'RECEIVED', 'VERIFIED']] }, '$amount', 0] }
                     },
                     totalReceived: {
-                        $sum: { $cond: [{ $in: ['$status', ['received', 'verified']] }, '$amount', 0] }
+                        $sum: { $cond: [{ $in: ['$status', ['RECEIVED', 'VERIFIED']] }, '$amount', 0] }
                     },
                     totalVerified: {
-                        $sum: { $cond: [{ $eq: ['$status', 'verified'] }, '$amount', 0] }
+                        $sum: { $cond: [{ $eq: ['$status', 'VERIFIED'] }, '$amount', 0] }
                     },
                     totalRecords: { $sum: 1 }
                 }
@@ -451,10 +451,10 @@ const getIncomeStats = async (req, res) => {
                 $group: {
                     _id: '$source',
                     totalExpected: {
-                        $sum: { $cond: [{ $in: ['$status', ['expected', 'received', 'verified']] }, '$amount', 0] }
+                        $sum: { $cond: [{ $in: ['$status', ['EXPECTED', 'RECEIVED', 'VERIFIED']] }, '$amount', 0] }
                     },
                     totalReceived: {
-                        $sum: { $cond: [{ $in: ['$status', ['received', 'verified']] }, '$amount', 0] }
+                        $sum: { $cond: [{ $in: ['$status', ['RECEIVED', 'VERIFIED']] }, '$amount', 0] }
                     }
                 }
             },
@@ -468,10 +468,10 @@ const getIncomeStats = async (req, res) => {
                 $group: {
                     _id: '$category',
                     totalExpected: {
-                        $sum: { $cond: [{ $in: ['$status', ['expected', 'received', 'verified']] }, '$amount', 0] }
+                        $sum: { $cond: [{ $in: ['$status', ['EXPECTED', 'RECEIVED', 'VERIFIED']] }, '$amount', 0] }
                     },
                     totalReceived: {
-                        $sum: { $cond: [{ $in: ['$status', ['received', 'verified']] }, '$amount', 0] }
+                        $sum: { $cond: [{ $in: ['$status', ['RECEIVED', 'VERIFIED']] }, '$amount', 0] }
                     }
                 }
             }

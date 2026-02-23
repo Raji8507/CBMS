@@ -83,14 +83,12 @@ const Sidebar = ({ isOpen, onClose, isExpanded, onToggleExpand }) => {
       case 'vice_principal':
       case 'principal':
         return [
-          ...baseItems,
-          { path: '/approvals', label: 'Approvals', icon: <CheckSquare size={20} /> },
-          { path: '/budget-utilization-dashboard', label: 'Budget Dashboard', icon: <Gauge size={20} /> },
+          { path: '/dashboard', label: 'Command Center', icon: <LayoutDashboard size={20} /> },
+          { path: '/graphical-dashboard', label: 'Analytics', icon: <LineChart size={20} /> },
+          { path: '/approvals', label: 'Approvals Queue', icon: <CheckSquare size={20} /> },
+          { path: '/reports', label: 'Reports', icon: <FileText size={20} /> },
           { path: '/consolidated-budget-report', label: 'Budget Report', icon: <BarChart3 size={20} /> },
           { path: '/budget-proposal-report', label: 'Proposal Report', icon: <FileText size={20} /> },
-          { path: '/reports', label: 'Reports', icon: <FileText size={20} /> },
-          { path: '/consolidated-view', label: 'Consolidated View', icon: <TrendingUp size={20} /> },
-          { path: '/year-comparison', label: 'Year Comparison', icon: <LineChart size={20} /> },
         ];
       case 'auditor':
         return [

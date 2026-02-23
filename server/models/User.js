@@ -21,14 +21,14 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'office', 'department', 'hod', 'vice_principal', 'principal', 'auditor'],
+    enum: ['admin', 'office', 'coordinator', 'hod', 'vice_principal', 'principal', 'auditor'],
     required: [true, 'Role is required']
   },
   department: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Department',
     required: function () {
-      return ['department', 'hod'].includes(this.role);
+      return ['coordinator', 'hod'].includes(this.role);
     }
   },
   isActive: {

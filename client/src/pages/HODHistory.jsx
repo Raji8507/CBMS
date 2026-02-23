@@ -161,22 +161,22 @@ const HODHistory = () => {
                                             <td><StatusBadge status={proposal?.status} /></td>
                                             <td>
                                                 <div className="status-trail">
-                                                    <span className={`step ${['submitted', 'verified_by_hod', 'verified_by_principal', 'approved', 'allocated'].includes(proposal?.status) ? 'done' : ''}`} title="Submitted by Department">
+                                                    <span className={`step ${['PENDING', 'HOD_VERIFIED', 'MANAGEMENT_APPROVED', 'ALLOCATED', 'REJECTED'].includes(proposal?.status) ? 'done' : ''}`} title="Submitted by Department">
                                                         S
                                                         <span className="tooltip">Submitted by Department</span>
                                                     </span>
-                                                    <span className={`separator ${['verified_by_hod', 'verified_by_principal', 'approved', 'allocated'].includes(proposal?.status) ? 'done' : ''}`}></span>
-                                                    <span className={`step ${['verified_by_hod', 'verified_by_principal', 'approved', 'allocated'].includes(proposal?.status) ? 'done' : ''}`} title="Verified by HOD">
+                                                    <span className={`separator ${['HOD_VERIFIED', 'MANAGEMENT_APPROVED', 'ALLOCATED'].includes(proposal?.status) ? 'done' : ''}`}></span>
+                                                    <span className={`step ${['HOD_VERIFIED', 'MANAGEMENT_APPROVED', 'ALLOCATED'].includes(proposal?.status) ? 'done' : ''}`} title="Verified by HOD">
                                                         H
                                                         <span className="tooltip">Verified by HOD</span>
                                                     </span>
-                                                    <span className={`separator ${['verified_by_principal', 'approved', 'allocated'].includes(proposal?.status) ? 'done' : ''}`}></span>
-                                                    <span className={`step ${['verified_by_principal', 'approved', 'allocated'].includes(proposal?.status) ? 'done' : ''}`} title="Approved by Principal">
+                                                    <span className={`separator ${['MANAGEMENT_APPROVED', 'ALLOCATED'].includes(proposal?.status) ? 'done' : ''}`}></span>
+                                                    <span className={`step ${['MANAGEMENT_APPROVED', 'ALLOCATED'].includes(proposal?.status) ? 'done' : ''}`} title="Approved by Principal">
                                                         P
                                                         <span className="tooltip">Approved by Principal</span>
                                                     </span>
-                                                    <span className={`separator ${['allocated'].includes(proposal?.status) ? 'done' : ''}`}></span>
-                                                    <span className={`step ${['allocated'].includes(proposal?.status) ? 'done' : ''}`} title="Allocated by Office">
+                                                    <span className={`separator ${['ALLOCATED'].includes(proposal?.status) ? 'done' : ''}`}></span>
+                                                    <span className={`step ${['ALLOCATED'].includes(proposal?.status) ? 'done' : ''}`} title="Allocated by Office">
                                                         O
                                                         <span className="tooltip">Allocated by Office</span>
                                                     </span>
@@ -220,22 +220,22 @@ const HODHistory = () => {
                                             <td><StatusBadge status={exp?.status} /></td>
                                             <td>
                                                 <div className="status-trail">
-                                                    <span className={`step ${['pending', 'verified', 'approved', 'finalized'].includes(exp?.status) ? 'done' : ''}`} title="Submitted by Department">
+                                                    <span className={`step ${['PENDING', 'HOD_VERIFIED', 'MANAGEMENT_APPROVED', 'FINALIZED', 'REJECTED'].includes(exp?.status) ? 'done' : ''}`} title="Submitted by Department">
                                                         S
                                                         <span className="tooltip">Submitted by Department</span>
                                                     </span>
-                                                    <span className={`separator ${['verified', 'approved', 'finalized'].includes(exp?.status) ? 'done' : ''}`}></span>
-                                                    <span className={`step ${['verified', 'approved', 'finalized'].includes(exp?.status) ? 'done' : ''}`} title="Verified by HOD">
+                                                    <span className={`separator ${['HOD_VERIFIED', 'MANAGEMENT_APPROVED', 'FINALIZED'].includes(exp?.status) ? 'done' : ''}`}></span>
+                                                    <span className={`step ${['HOD_VERIFIED', 'MANAGEMENT_APPROVED', 'FINALIZED'].includes(exp?.status) ? 'done' : ''}`} title="Verified by HOD">
                                                         H
                                                         <span className="tooltip">Verified by HOD</span>
                                                     </span>
-                                                    <span className={`separator ${['approved', 'finalized'].includes(exp?.status) ? 'done' : ''}`}></span>
-                                                    <span className={`step ${['approved', 'finalized'].includes(exp?.status) ? 'done' : ''}`} title="Approved by Principal">
+                                                    <span className={`separator ${['MANAGEMENT_APPROVED', 'FINALIZED'].includes(exp?.status) ? 'done' : ''}`}></span>
+                                                    <span className={`step ${['MANAGEMENT_APPROVED', 'FINALIZED'].includes(exp?.status) ? 'done' : ''}`} title="Approved by Principal">
                                                         P
                                                         <span className="tooltip">Approved by Principal</span>
                                                     </span>
-                                                    <span className={`separator ${['finalized'].includes(exp?.status) ? 'done' : ''}`}></span>
-                                                    <span className={`step ${['finalized'].includes(exp?.status) ? 'done' : ''}`} title="Sanctioned by Office">
+                                                    <span className={`separator ${['FINALIZED'].includes(exp?.status) ? 'done' : ''}`}></span>
+                                                    <span className={`step ${['FINALIZED'].includes(exp?.status) ? 'done' : ''}`} title="Sanctioned by Office">
                                                         O
                                                         <span className="tooltip">Sanctioned by Office</span>
                                                     </span>

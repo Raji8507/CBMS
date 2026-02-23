@@ -58,13 +58,15 @@ import {
 import FinancialYearManagement from './pages/FinancialYearManagement';
 import './App.scss';
 
+import ManagementDashboard from './pages/ManagementDashboard';
+
 // Dashboard Wrapper Component
 const DashboardWrapper = () => {
   const { user } = useAuth();
 
   if (!user) return <Navigate to="/login" />;
 
-  if (user.role === 'department') {
+  if (user.role === 'coordinator') {
     return <DepartmentDashboard />;
   }
 
@@ -74,6 +76,10 @@ const DashboardWrapper = () => {
 
   if (user.role === 'office') {
     return <OfficeDashboard />;
+  }
+
+  if (user.role === 'principal' || user.role === 'vice_principal') {
+    return <ManagementDashboard />;
   }
 
   return <Dashboard />;

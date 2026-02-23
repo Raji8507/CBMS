@@ -111,9 +111,9 @@ export const IncomeReceipts = () => {
 
     const getStatusBadgeClass = (status) => {
         const classes = {
-            expected: 'status-expected',
-            received: 'status-received',
-            verified: 'status-verified'
+            EXPECTED: 'status-expected',
+            RECEIVED: 'status-received',
+            VERIFIED: 'status-verified'
         };
         return classes[status] || '';
     };
@@ -231,9 +231,9 @@ export const IncomeReceipts = () => {
                         className="filter-select"
                     >
                         <option value="">All Status</option>
-                        <option value="expected">Expected</option>
-                        <option value="received">Received</option>
-                        <option value="verified">Verified</option>
+                        <option value="EXPECTED">Expected</option>
+                        <option value="RECEIVED">Received</option>
+                        <option value="VERIFIED">Verified</option>
                     </select>
                 </div>
                 <div className="filter-group">
@@ -377,9 +377,9 @@ export const IncomeForm = () => {
     ];
 
     const statusOptions = [
-        { value: 'expected', label: 'Expected' },
-        { value: 'received', label: 'Received' },
-        { value: 'verified', label: 'Verified' }
+        { value: 'EXPECTED', label: 'Expected' },
+        { value: 'RECEIVED', label: 'Received' },
+        { value: 'VERIFIED', label: 'Verified' }
     ];
 
     useEffect(() => {
@@ -446,7 +446,7 @@ export const IncomeForm = () => {
         setError(null);
 
         // Validation
-        if (formData.status === 'received' && !formData.receivedDate) {
+        if (formData.status === 'RECEIVED' && !formData.receivedDate) {
             setError('Received date is required when status is "Received"');
             return;
         }

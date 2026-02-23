@@ -23,23 +23,15 @@ const ApprovalsQueue = () => {
   const fetchApprovals = async () => {
     try {
       setLoading(true);
-      const getPropStatus = () => {
-        if (filters.status === 'pending_approval') {
-          // If filtering for "My Approvals", we let the backend handle the role-based complex query
-          return 'pending_approval'; // Actually, let's use a special flag or just 'submitted,verified'
-        }
-        if (filters.status === 'pending') return 'submitted';
-        return filters.status;
-      };
 
       const propParams = { ...filters };
       if (filters.status === 'pending_approval') {
         // Special mapping for budgetProposalAPI.getBudgetProposals to hit our new controller logic
-        if (user.role === 'hod') propParams.status = 'submitted';
-        else if (['principal', 'vice_principal'].includes(user.role)) propParams.status = 'verified_by_hod';
-        else if (user.role === 'office') propParams.status = 'verified_by_principal';
+        if (user.role === 'hod') propParams.status = 'PENDING';
+        else if (['principal', 'vice_principal'].includes(user.role)) propParams.status = 'HOD_VERIFIED';
+        else if (user.role === 'office') propParams.status = 'MANAGEMENT_APPROVED';
       } else {
-        propParams.status = getPropStatus();
+        propParams.status = filters.status === 'PENDING' ? 'PENDING' : filters.status;
       }
 
       const [expRes, propRes] = await Promise.all([
@@ -126,7 +118,7 @@ const ApprovalsQueue = () => {
           <div className="queue-stats">
             <div className="stat-badge pending">
               <ClipboardList size={16} />
-              <span>{approvalItems.filter(i => i.status.includes('pending') || i.status === 'submitted').length} Pending</span>
+              <span>{approvalItems.filter(i => ['PENDING', 'HOD_VERIFIED', 'MANAGEMENT_APPROVED'].includes(i.status)).length} Pending</span>
             </div>
           </div>
         </div>
@@ -151,10 +143,12 @@ const ApprovalsQueue = () => {
               onChange={(e) => setFilters({ ...filters, status: e.target.value })}
             >
               <option value="pending_approval">Pending My Approval</option>
-              <option value="verified">Verified by HOD</option>
-              <option value="approved">Approved by Principal</option>
-              <option value="finalized">Finalized</option>
-              <option value="rejected">Rejected</option>
+              <option value="PENDING">Awaiting HOD Verification</option>
+              <option value="HOD_VERIFIED">Awaiting Principal Approval</option>
+              <option value="MANAGEMENT_APPROVED">Awaiting Office Sanction</option>
+              <option value="ALLOCATED">Allocated (Budget)</option>
+              <option value="FINALIZED">Finalized (Expenditure)</option>
+              <option value="REJECTED">Rejected</option>
             </select>
           </div>
         </div>
@@ -220,8 +214,8 @@ const ApprovalsQueue = () => {
                         {/* VP/Principal Action: Approve or Reject (Both Types) */}
                         {
                           ['vice_principal', 'principal'].includes(user?.role) &&
-                          ((item.itemType === 'expenditure' && item.status === 'verified') ||
-                            (item.itemType === 'proposal' && (item.status === 'verified_by_hod'))) && (
+                          ((item.itemType === 'expenditure' && item.status === 'HOD_VERIFIED') ||
+                            (item.itemType === 'proposal' && item.status === 'HOD_VERIFIED')) && (
                             <>
                               <Tooltip text={item.itemType === 'expenditure' ? "Approve" : "Verify & Accept"} position="top">
                                 <button
@@ -245,14 +239,14 @@ const ApprovalsQueue = () => {
                           user?.role === 'office' && (
                             <>
                               {/* Expenditure Flow: Office only sanctions items approved by Management */}
-                              {item.itemType === 'expenditure' && item.status === 'approved' && (
+                              {item.itemType === 'expenditure' && item.status === 'MANAGEMENT_APPROVED' && (
                                 <Tooltip text="Final Sanction (Deduct Budget)" position="top">
                                   <button className="btn-icon approve" onClick={() => handleAction(item, 'approve')}>
                                     <Check size={16} />
                                   </button>
                                 </Tooltip>
                               )}
-                              {item.itemType === 'expenditure' && ['approved'].includes(item.status) && (
+                              {item.itemType === 'expenditure' && ['MANAGEMENT_APPROVED'].includes(item.status) && (
                                 <Tooltip text="Reject" position="top">
                                   <button className="btn-icon reject" onClick={() => handleAction(item, 'reject')}>
                                     <X size={16} />
@@ -260,14 +254,14 @@ const ApprovalsQueue = () => {
                                 </Tooltip>
                               )}
                               {/* Proposal Flow: Office only allocates items verified by Management */}
-                              {item.itemType === 'proposal' && item.status === 'verified_by_principal' && (
+                              {item.itemType === 'proposal' && item.status === 'MANAGEMENT_APPROVED' && (
                                 <Tooltip text="Allocate & Approve" position="top">
                                   <button className="btn-icon approve" onClick={() => handleAction(item, 'approve')}>
                                     <Check size={16} />
                                   </button>
                                 </Tooltip>
                               )}
-                              {item.itemType === 'proposal' && ['verified_by_principal'].includes(item.status) && (
+                              {item.itemType === 'proposal' && ['MANAGEMENT_APPROVED'].includes(item.status) && (
                                 <Tooltip text="Reject" position="top">
                                   <button className="btn-icon reject" onClick={() => handleAction(item, 'reject')}>
                                     <X size={16} />
@@ -278,7 +272,8 @@ const ApprovalsQueue = () => {
                           )
                         }
 
-                        {['approved', 'rejected', 'verified'].includes(item.status) && <span className="date-text">-</span>}
+                        {['MANAGEMENT_APPROVED', 'REJECTED', 'ALLOCATED', 'FINALIZED'].includes(item.status) && user?.role === 'hod' && <span className="date-text">-</span>}
+                        {['REJECTED', 'ALLOCATED', 'FINALIZED'].includes(item.status) && ['principal', 'vice_principal', 'office'].includes(user?.role) && <span className="date-text">-</span>}
                       </div>
                     </td>
                   </tr>

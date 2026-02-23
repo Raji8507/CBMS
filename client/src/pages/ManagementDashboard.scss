@@ -1,0 +1,213 @@
+.management-dashboard {
+    padding: 2rem;
+    max-width: 1600px;
+    margin: 0 auto;
+
+    .management-dashboard-loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 60vh;
+        font-size: 1.2rem;
+        color: #64748b;
+    }
+
+    // Health Summary Cards
+    .health-summary-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+
+        .utilization-meter-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border-left: 6px solid #10b981;
+
+            &.warning { border-left-color: #f59e0b; .value { color: #f59e0b; } }
+            &.critical { border-left-color: #ef4444; .value { color: #ef4444; } }
+
+            .label { font-size: 0.875rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
+            .value { font-size: 2rem; font-weight: 800; color: #10b981; margin: 0.5rem 0; }
+
+            .progress-bg {
+                height: 8px;
+                background: #f1f5f9;
+                border-radius: 4px;
+                overflow: hidden;
+                .progress-fill { height: 100%; background: currentColor; transition: width 0.5s ease; }
+            }
+        }
+    }
+
+    // Analytics Grid
+    .analytics-grid {
+        display: grid;
+        grid-template-columns: 2fr 1.2fr;
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+
+        @media (max-width: 1200px) {
+            grid-template-columns: 1fr;
+        }
+
+        .content-card {
+            margin-bottom: 0; // Reset default margin
+        }
+    }
+
+    // Approval Control Center
+    .approval-control-center {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 1rem;
+
+            h3 {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                margin: 0;
+                color: #1e293b;
+                font-weight: 700;
+            }
+
+            .tabs {
+                display: flex;
+                background: #f1f5f9;
+                padding: 4px;
+                border-radius: 8px;
+
+                button {
+                    padding: 8px 20px;
+                    border: none;
+                    background: transparent;
+                    border-radius: 6px;
+                    font-size: 0.875rem;
+                    font-weight: 600;
+                    color: #64748b;
+                    cursor: pointer;
+                    transition: all 0.2s;
+
+                    &.active {
+                        background: white;
+                        color: #2563eb;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                    }
+                }
+            }
+        }
+
+        .approval-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .approval-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+
+            &:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            }
+
+            &.proposal {
+                border-top: 4px solid #6366f1;
+            }
+
+            .card-top {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+
+                .dept {
+                    font-size: 0.75rem;
+                    color: #2563eb;
+                    background: #eff6ff;
+                    padding: 2px 8px;
+                    border-radius: 4px;
+                    font-weight: 700;
+                }
+
+                .amount {
+                    font-weight: 800;
+                    color: #1e293b;
+                }
+            }
+
+            .event-name, .title {
+                font-size: 1.125rem;
+                font-weight: 700;
+                color: #0f172a;
+            }
+
+            .meta {
+                display: flex;
+                gap: 1rem;
+                font-size: 0.875rem;
+                color: #64748b;
+
+                span { display: flex; align-items: center; gap: 4px; }
+            }
+
+            .actions {
+                margin-top: auto;
+                padding-top: 1rem;
+                border-top: 1px dashed #e2e8f0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+
+                .quick-actions {
+                    display: flex;
+                    gap: 8px;
+
+                    button {
+                        border: none;
+                        padding: 6px 12px;
+                        border-radius: 4px;
+                        font-weight: 600;
+                        font-size: 0.75rem;
+                        cursor: pointer;
+                        transition: opacity 0.2s;
+
+                        &:disabled { opacity: 0.5; cursor: not-allowed; }
+                        &.btn-approve { background: #10b981; color: white; }
+                        &.btn-reject { background: #fee2e2; color: #ef4444; }
+                    }
+                }
+            }
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem;
+            color: #94a3b8;
+            gap: 1rem;
+            p { font-weight: 600; font-size: 1.1rem; }
+        }
+    }
+}

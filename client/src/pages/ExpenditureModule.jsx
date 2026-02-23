@@ -99,12 +99,13 @@ export const Expenditures = () => {
 
     const getStatusColor = (status) => {
         const colors = {
-            pending: 'pending',
-            approved: 'approved',
-            rejected: 'rejected',
-            verified: 'verified'
+            'PENDING': 'pending',
+            'HOD_VERIFIED': 'info',
+            'MANAGEMENT_APPROVED': 'info',
+            'FINALIZED': 'approved',
+            'REJECTED': 'rejected'
         };
-        return colors[status] || '';
+        return colors[status?.toUpperCase()] || 'neutral';
     };
 
     return (
@@ -132,10 +133,11 @@ export const Expenditures = () => {
                         onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value, page: 1 }))}
                     >
                         <option value="">All Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="verified">Verified</option>
-                        <option value="approved">Approved</option>
-                        <option value="rejected">Rejected</option>
+                        <option value="PENDING">Pending Approval</option>
+                        <option value="HOD_VERIFIED">Verified by HOD</option>
+                        <option value="MANAGEMENT_APPROVED">Approved by Management</option>
+                        <option value="FINALIZED">Finalized & Deducted</option>
+                        <option value="REJECTED">Rejected</option>
                     </select>
                 </div>
                 <div className="filter-group">
@@ -199,7 +201,7 @@ export const Expenditures = () => {
                                                     </button>
                                                 </Tooltip>
 
-                                                {exp.status === 'rejected' && (
+                                                {exp.status === 'REJECTED' && (
                                                     <Tooltip text="Resubmit" position="top">
                                                         <button className="btn btn-sm btn-primary" onClick={() => handleResubmit(exp._id)}>
                                                             <RotateCcw size={16} />
@@ -279,6 +281,12 @@ export const Expenditures = () => {
                                     <label>Event Description</label>
                                     <div className="text-muted">{selectedExpenditure.description}</div>
                                 </div>
+                                {selectedExpenditure.transactionId && (
+                                    <div className="detail-item full-width">
+                                        <label>Transaction ID</label>
+                                        <div className="font-mono font-bold text-primary">{selectedExpenditure.transactionId}</div>
+                                    </div>
+                                )}
 
                                 <div className="detail-item full-width">
                                     <label>Expense Items ({selectedExpenditure.expenseItems?.length || 0})</label>
@@ -297,7 +305,7 @@ export const Expenditures = () => {
                                     </div>
                                 </div>
 
-                                {selectedExpenditure.status === 'rejected' && selectedExpenditure.approvalSteps && (
+                                {selectedExpenditure.status === 'REJECTED' && selectedExpenditure.approvalSteps && (
                                     <div className="detail-item full-width rejection-box">
                                         <label className="text-danger">Rejection Remarks</label>
                                         <div className="text-danger">
@@ -305,10 +313,37 @@ export const Expenditures = () => {
                                         </div>
                                     </div>
                                 )}
+
+                                <div className="detail-item full-width">
+                                    <label>Approval Timeline</label>
+                                    <div className="timeline-container" style={{ marginTop: '1rem', padding: '1rem', background: '#fff', borderRadius: '8px', border: '1px solid #eee' }}>
+                                        {selectedExpenditure.approvalSteps?.length > 0 ? (
+                                            selectedExpenditure.approvalSteps.map((step, sIdx) => (
+                                                <div key={sIdx} className="timeline-step" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', borderLeft: '2px solid #eee', paddingLeft: '1rem', position: 'relative' }}>
+                                                    <div className="timeline-dot" style={{ position: 'absolute', left: '-7px', top: '0', width: '12px', height: '12px', borderRadius: '50%', background: step.decision === 'approve' || step.decision === 'verify' ? '#28a745' : step.decision === 'reject' ? '#dc3545' : '#6c757d' }}></div>
+                                                    <div className="timeline-content">
+                                                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{step.role?.toUpperCase() || 'SYSTEM'} - {step.decision?.toUpperCase() || 'PENDING'}</div>
+                                                        <div style={{ fontSize: '0.8rem', color: '#666' }}>{step.approver?.name || 'Assigned User'} | {step.date ? new Date(step.date).toLocaleString() : 'Pending'}</div>
+                                                        {step.remarks && <div style={{ fontSize: '0.85rem', marginTop: '4px', fontStyle: 'italic' }}>&quot;{step.remarks}&quot;</div>}
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-muted" style={{ fontSize: '0.9rem' }}>No approval history available.</div>
+                                        )}
+                                        <div className="timeline-step" style={{ display: 'flex', gap: '1rem', borderLeft: '2px solid #eee', paddingLeft: '1rem', position: 'relative' }}>
+                                            <div className="timeline-dot" style={{ position: 'absolute', left: '-7px', top: '0', width: '12px', height: '12px', borderRadius: '50%', background: '#17a2b8' }}></div>
+                                            <div className="timeline-content">
+                                                <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>SUBMITTED</div>
+                                                <div style={{ fontSize: '0.8rem', color: '#666' }}>{selectedExpenditure.submittedBy?.name || 'User'} | {new Date(selectedExpenditure.createdAt).toLocaleString()}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div className="modal-footer">
-                            {selectedExpenditure.status === 'rejected' && (
+                            {selectedExpenditure.status === 'REJECTED' && (
                                 <button className="btn btn-primary" onClick={() => {
                                     setShowModal(false);
                                     handleResubmit(selectedExpenditure._id);
@@ -501,6 +536,7 @@ export const SubmitExpenditure = () => {
             if (!item.amount || parseFloat(item.amount) <= 0) newErrors[`item_${idx}_amount`] = 'Invalid amount';
             if (!item.billNumber?.trim()) newErrors[`item_${idx}_bill`] = 'Bill number required';
             if (!item.billDate) newErrors[`item_${idx}_date`] = 'Bill date required';
+            if (!item.attachments || item.attachments.length === 0) newErrors[`item_${idx}_attachments`] = 'Bill upload is mandatory';
         });
 
         const total = calculateTotal();
@@ -696,7 +732,8 @@ export const SubmitExpenditure = () => {
                                     </div>
                                     <div className="form-group">
                                         <label>Attach Bills</label>
-                                        <input type="file" multiple onChange={(e) => handleFileChange(idx, e)} accept="image/*,.pdf" />
+                                        <input type="file" multiple onChange={(e) => handleFileChange(idx, e)} accept="image/*,.pdf" className={errors[`item_${idx}_attachments`] ? 'error' : ''} />
+                                        {errors[`item_${idx}_attachments`] && <span className="form-error">{errors[`item_${idx}_attachments`]}</span>}
                                         <div className="mt-2" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                             {item.attachments.map((file, fIdx) => (
                                                 <span key={fIdx} style={{ background: '#eee', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>

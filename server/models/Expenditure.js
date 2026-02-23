@@ -107,8 +107,8 @@ const expenditureSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'verified', 'approved', 'finalized', 'rejected'],
-    default: 'pending'
+    enum: ['PENDING', 'HOD_VERIFIED', 'MANAGEMENT_APPROVED', 'FINALIZED', 'REJECTED'],
+    default: 'PENDING'
   },
   approvalSteps: [approvalStepSchema],
   submittedBy: {
@@ -127,6 +127,11 @@ const expenditureSchema = new mongoose.Schema({
   originalExpenditureId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Expenditure'
+  },
+  transactionId: {
+    type: String,
+    unique: true,
+    sparse: true
   }
 }, {
   timestamps: true
